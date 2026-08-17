@@ -1,0 +1,140 @@
+@import "./tokens.css";
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+button, input, select, textarea { font-family: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+*:focus-visible { outline: 2px solid var(--forest); outline-offset: 2px; }
+
+.container { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+
+.brand-mark { display: flex; align-items: center; gap: 12px; }
+.brand-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  border: 2px solid var(--brass); background: var(--forest-dark); color: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-mono); font-weight: 700; font-size: 0.8rem; letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+.brand-title { font-family: var(--font-display); font-weight: 700; font-size: 1.15rem; margin: 0; line-height: 1.15; }
+.brand-sub { margin: 2px 0 0; font-family: var(--font-mono); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--brass); }
+
+.card {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 18px;
+}
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 0.78rem; font-weight: 600; color: #4a5750; }
+.field-hint { font-size: 0.7rem; color: #8b968e; }
+.field input, .field select, .field textarea {
+  border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 10px 12px; font-size: 0.92rem; background: var(--paper); color: var(--ink);
+}
+.field input:focus, .field select:focus { background: var(--white); }
+
+.form-error { display: flex; align-items: center; gap: 6px; color: var(--rust); font-size: 0.8rem; margin: 0; }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border-radius: 9px; border: 1px solid transparent; padding: 11px 16px;
+  font-size: 0.9rem; font-weight: 600; transition: filter 0.15s;
+}
+.btn-block { width: 100%; }
+.btn-primary { background: var(--forest-dark); color: var(--white); }
+.btn-primary:hover { filter: brightness(1.1); }
+.btn-ghost { background: transparent; border-color: var(--line); color: var(--ink); }
+.btn-ghost:hover { background: var(--paper-dim); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-sm { padding: 6px 10px; font-size: 0.72rem; }
+
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --------------------------------------------------------------- */
+/* Shell: topbar + navegação inferior no mobile / lateral no desktop */
+/* --------------------------------------------------------------- */
+.shell { min-height: 100vh; display: flex; flex-direction: column; }
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px; background: var(--white); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 10;
+}
+.topbar-user { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; }
+.topbar-user-name { display: none; }
+
+.app-body { flex: 1; display: flex; }
+.content { flex: 1; padding-bottom: 72px; }
+
+.bottomnav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; background: var(--white); border-top: 1px solid var(--line); z-index: 10;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.bottomnav-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 9px 4px 10px; border: none; background: none; color: #7c8a80; font-size: 0.66rem; font-weight: 600;
+}
+.bottomnav-item-active { color: var(--forest-dark); }
+
+.view-pad { padding: 18px 16px 8px; max-width: 960px; margin: 0 auto; }
+.view-title { font-family: var(--font-display); font-size: 1.5rem; margin: 2px 0 16px; }
+
+/* Cards de setor na Home */
+.setor-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.setor-card {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg);
+  padding: 16px; text-align: left; width: 100%;
+}
+.setor-card:disabled { opacity: 0.5; cursor: not-allowed; }
+.setor-icon {
+  width: 44px; height: 44px; border-radius: var(--radius-md); background: var(--paper-dim);
+  color: var(--forest-dark); display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.setor-info { flex: 1; min-width: 0; }
+.setor-nome { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; margin: 0; }
+.setor-desc { font-size: 0.8rem; color: #6b7a6f; margin: 2px 0 0; }
+.setor-badge {
+  font-family: var(--font-mono); font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 3px 8px; border-radius: 20px; background: var(--paper-dim); color: #6b7a6f; flex-shrink: 0;
+}
+.setor-badge-ativo { color: var(--forest-dark); background: #e3ede7; }
+
+.login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.login-card { width: 100%; max-width: 380px; background: var(--white); border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 28px 24px; }
+.login-form { display: flex; flex-direction: column; gap: 14px; margin-top: 22px; }
+.login-hint { font-size: 0.78rem; color: #8b968e; text-align: center; margin-top: 18px; }
+
+.iframe-wrap { position: fixed; inset: 0; top: 60px; bottom: 0; }
+.iframe-wrap iframe { width: 100%; height: 100%; border: none; }
+
+@media (min-width: 900px) {
+  .topbar-user-name { display: inline; }
+  .app-body { max-width: 1180px; margin: 0 auto; width: 100%; }
+  .sidenav {
+    display: flex; flex-direction: column; gap: 4px; width: 208px; padding: 20px 12px;
+    flex-shrink: 0; border-right: 1px solid var(--line);
+  }
+  .sidenav-item {
+    display: flex; align-items: center; gap: 10px; border: none; background: none;
+    padding: 10px 12px; border-radius: 8px; font-size: 0.88rem; font-weight: 600; color: #5a6a5d; text-align: left;
+  }
+  .sidenav-item:hover { background: var(--paper-dim); }
+  .sidenav-item-active { background: var(--forest-dark); color: var(--white); }
+  .bottomnav { display: none; }
+  .content { padding-bottom: 24px; }
+  .view-pad { padding: 28px 32px; }
+  .setor-grid { grid-template-columns: repeat(2, 1fr); }
+  .iframe-wrap { top: 0; left: 208px; }
+}

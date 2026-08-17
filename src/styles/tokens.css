@@ -1,0 +1,20 @@
+:root {
+  --ink: #1b2420;
+  --paper: #f3f6f1;
+  --paper-dim: #e7ece2;
+  --white: #ffffff;
+  --forest: #2f6b4f;
+  --forest-dark: #204a37;
+  --brass: #a9863c;
+  --rust: #b4483a;
+  --amber: #b4842a;
+  --line: rgba(27, 36, 32, 0.14);
+
+  --font-display: "Fraunces", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+}
