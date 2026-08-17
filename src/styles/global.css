@@ -119,6 +119,7 @@ a { color: inherit; }
 .iframe-wrap { position: fixed; inset: 0; top: 60px; bottom: 0; }
 .iframe-wrap iframe { width: 100%; height: 100%; border: none; }
 
+<<<<<<< HEAD
 @media (min-width: 900px) {
   .topbar-user-name { display: inline; }
   .app-body { max-width: 1180px; margin: 0 auto; width: 100%; }
@@ -137,4 +138,24 @@ a { color: inherit; }
   .view-pad { padding: 28px 32px; }
   .setor-grid { grid-template-columns: repeat(2, 1fr); }
   .iframe-wrap { top: 0; left: 208px; }
+=======
+.erroCampo { color: var(--alerta); font-size: 13px; margin-top: 8px; min-height: 18px; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--tinta); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 13.5px; z-index: 60; }
+.toast.ruim { background: var(--alerta); }
+
+.secaoFicha { font-family: var(--display); text-transform: uppercase; letter-spacing: .05em; font-size: 15px; margin: 0 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--tinta); }
+.linhaFicha { display: grid; grid-template-columns: 1fr; gap: 8px; align-items: center; margin-bottom: 8px; }
+.linhaFicha.coluna { display: block; background: #fff; border: 1px solid var(--linha); border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+.linhaFicha.coluna .grade { margin-bottom: 8px; }
+.fimLinha { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.logoMini { max-height: 34px; max-width: 90px; display: block; margin-top: 6px; }
+.logoPreview { display: flex; gap: 12px; align-items: center; background: #fff; border: 1px solid var(--linha); border-radius: 8px; padding: 10px; margin-top: 6px; }
+.logoPreview img { max-width: 120px; max-height: 60px; }
+
+@media (min-width: 700px) {
+  .linhaFicha { grid-template-columns: 1fr 1fr auto; }
+  .filtros .campos { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .grade { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+  .indicadores { grid-template-columns: repeat(4, 1fr); }
+>>>>>>> ce469ce (Configura supabase)
 }

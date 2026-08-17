@@ -1,0 +1,63 @@
+.rel { background: #fff; color: #1a1a1a; font-family: var(--corpo); font-size: 11.5px; line-height: 1.45; }
+.rel .barraTopo { height: 12px; background: #d6a22c; }
+.rel .barraTopo.pos { background: #1f5d8c; }
+.rel-header { display: flex; align-items: center; gap: 16px; padding: 16px 26px; border-bottom: 3px solid #e8a21f; }
+.rel-header.pos { border-color: #1f5d8c; }
+.rel-header img.logoClube { max-height: 60px; }
+.rel-header img.logoEvento { max-height: 56px; max-width: 130px; margin-left: auto; }
+.rel-titulo .ano { font-family: var(--display); font-size: 16px; font-weight: 700; color: #e8a21f; letter-spacing: .08em; }
+.rel-header.pos .rel-titulo .ano { color: #1f5d8c; }
+.rel-titulo h1 { font-family: var(--display); font-size: 30px; margin: 0; line-height: 1; }
+.rel-titulo .subtitulo { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; color: #3a4650; }
+.rel section { padding: 14px 26px; }
+.rel h2 { font-family: var(--display); font-size: 17px; margin: 14px 0 6px; padding-bottom: 3px; border-bottom: 1.5px solid #1a1a1a; }
+.rel .tiraInfo { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px 14px; background: #f6f8f9; border: 1px solid #e2e8ec; border-radius: 6px; padding: 8px 10px; margin-bottom: 12px; }
+.rel .tiraInfo span { display: block; font-size: 8.5px; text-transform: uppercase; letter-spacing: .09em; color: #6b7883; font-weight: 700; }
+.rel .tiraInfo b { font-size: 13px; }
+.rel .funcionamento { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 22px; }
+.rel .fl { display: grid; grid-template-columns: 104px 1fr; gap: 8px; align-items: baseline; }
+.rel .fh { font-family: var(--display); font-size: 14px; font-weight: 700; color: #b4483a; text-align: right; text-transform: uppercase; }
+.rel .ft { font-weight: 700; text-transform: uppercase; font-size: 11px; border-left: 1px solid #1a1a1a; padding-left: 8px; }
+.rel .patro { margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #e7ecef; }
+.rel .patroTopo { display: flex; align-items: center; gap: 10px; }
+.rel .patroTopo img { max-height: 40px; max-width: 130px; }
+.rel .patroNome { font-family: var(--display); font-size: 16px; font-weight: 700; text-transform: uppercase; }
+.rel .programa { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 22px; }
+.rel .pl { border-left: 4px solid #e8a21f; padding-left: 9px; }
+.rel .pn { font-family: var(--display); font-size: 15px; font-weight: 700; color: #e8a21f; text-transform: uppercase; }
+.rel .resps { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px 18px; }
+.rel .resp .rn { font-family: var(--display); font-size: 16px; font-weight: 700; color: #e8a21f; text-transform: uppercase; }
+.rel .resp .rt { color: #b4483a; font-weight: 600; font-size: 11px; }
+.rel .resp .ra { text-transform: uppercase; font-size: 9px; font-weight: 600; color: #3a4650; }
+.rel table { width: 100%; border-collapse: collapse; font-size: 10.5px; margin-top: 4px; }
+.rel th { background: #1a1a1a; color: #fff; text-align: left; padding: 5px 7px; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; }
+.rel td { border-bottom: 1px solid #dce3e8; padding: 5px 7px; vertical-align: top; }
+.rel .dir { text-align: right; }
+.rel tfoot td { background: #eef2f4; font-weight: 700; border-top: 1.5px solid #1a1a1a; }
+.rel .sit { display: inline-block; font-size: 9px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; }
+.rel .sit-realizado { background: #dff0e8; color: #0f5a41; }
+.rel .sit-parcial { background: #fff3d2; color: #7a5b00; }
+.rel .sit-nao_realizado { background: #fbe3de; color: #8e2416; }
+.rel .sit-nao_avaliado { background: #edf0f2; color: #68757f; }
+.rel .doisLados { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.rel .lado { border: 1px solid #e0e6ea; border-radius: 6px; padding: 8px 10px; }
+.rel .lado.positivo { border-left: 4px solid #1e7a5a; background: #f5fbf8; }
+.rel .lado.negativo { border-left: 4px solid #c0272d; background: #fdf6f5; }
+.rel .ladoTitulo { font-weight: 700; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; margin-bottom: 4px; }
+.rel .npsBox { display: flex; gap: 16px; align-items: center; border: 1px solid #e0e6ea; border-radius: 8px; padding: 10px 14px; background: #f6f9fb; }
+.rel .npsNota b { display: block; font-family: var(--display); font-size: 34px; color: #1f5d8c; }
+.rel .npsNota span { font-size: 9px; text-transform: uppercase; letter-spacing: .12em; color: #6b7883; }
+.rel .campoInline { border: 1px solid var(--linha); border-radius: 5px; padding: 5px 7px; font-size: 11.5px; width: 100%; }
+.rel textarea.campoInline { resize: vertical; }
+.rel .semDado { color: #9aa5ad; font-style: italic; }
+
+.rel-toolbar { position: sticky; top: 0; z-index: 5; background: #fff; border-bottom: 1px solid var(--linha); padding: 10px 16px; display: flex; gap: 8px; align-items: center; }
+
+@media print {
+  body * { visibility: hidden; }
+  .rel-doc, .rel-doc * { visibility: visible; }
+  .rel-doc { position: absolute; left: 0; top: 0; width: 100%; }
+  .naoImprime { display: none !important; }
+  .rel section { page-break-inside: avoid; }
+  @page { size: A4 portrait; margin: 12mm; }
+}

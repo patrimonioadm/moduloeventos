@@ -45,6 +45,7 @@ um trade-off aceitável para um portal interno.
 
 ## Como plugar um módulo novo, passo a passo
 
+<<<<<<< HEAD
 1. **Banco:** insira uma linha em `setores` (ou atualize o `status` de
    `em_breve` para `ativo` quando o módulo tiver URL real):
    ```sql
@@ -96,6 +97,38 @@ um trade-off aceitável para um portal interno.
 - **Isolamento de iframe:** módulos embutidos via `iframe` usam
   `sandbox` para não ter acesso ao DOM/JS do portal.
 - **Nenhuma credencial em URL/query string.**
+=======
+**Fase 2 (esta entrega):**
+- **Ficha do evento** (`src/pages/FichaEvento.jsx`): horário, descrição,
+  público, funcionamento das áreas do clube, patrocinadores (com logo),
+  programação, responsáveis. Admin edita; colaborador/leitor veem em
+  modo somente leitura.
+- **Logomarcas** (`src/pages/Logomarcas.jsx` + `src/lib/storage.js`):
+  upload de logo do clube (padrão dos relatórios), logo do evento e
+  logo de cada patrocinador, via bucket `eventos-midia` no Supabase
+  Storage (leitura pública, escrita restrita a admin por RLS). Também
+  edita a equipe de operação padrão do clube.
+- **Relatório pré-evento** (`RelatorioPreEvento.jsx`) e **pós-evento**
+  (`RelatorioPosEvento.jsx`): montados a partir dos dados já salvos na
+  Fase 1 + Ficha, com botão "Imprimir / salvar PDF" (`window.print()`
+  + CSS de impressão em `src/styles/relatorio.css`). O pós-evento
+  também é a tela de preenchimento do resultado (público real,
+  situação de cada item da programação, pontos positivos/negativos,
+  opinião da diretoria/sócios, NPS) — sai do banco na coluna
+  `pos_evento` (jsonb) da tabela `eventos`.
+- **Exportar CSV** das tarefas (`src/lib/csv.js`), com BOM UTF-8 para
+  abrir certo no Excel.
+
+**Fase 3 (ainda não implementada, ideias para continuar):**
+- Exclusão de tarefa individual com registro do que foi excluído (hoje
+  só existe exclusão de evento inteiro; tarefa é só "arquivada" via
+  status).
+- Tela de "Registro de alterações" agregando o histórico de todas as
+  tarefas do evento em uma linha do tempo única (hoje o histórico é
+  visto tarefa por tarefa, no modal).
+- Anexos/fotos do evento em `eventos_tarefas` (o protótipo tinha um
+  campo `imagens` por evento).
+>>>>>>> ce469ce (Configura supabase)
 
 ## Rodando localmente
 
