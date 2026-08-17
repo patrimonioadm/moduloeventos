@@ -2,87 +2,59 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { supabase } from "../lib/supabaseClient";
 
 const AuthContext = createContext(null);
+const SETOR = "eventos";
 
 export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [acessos, setAcessos] = useState([]); // [{ setor_chave, papel }]
+  const [papel, setPapel] = useState(null); // 'admin' | 'colaborador' | 'leitor' | null
 
-  const carregarPerfilEAcessos = useCallback(async (userId) => {
-    const [{ data: perfilData }, { data: acessosData }] = await Promise.all([
+  const carregar = useCallback(async (userId) => {
+    const [{ data: perfilData }, { data: acessoData }] = await Promise.all([
       supabase.from("profiles").select("*").eq("id", userId).single(),
-      supabase.from("acessos_setor").select("setor_chave, papel").eq("user_id", userId),
+      supabase
+        .from("acessos_setor")
+        .select("papel")
+        .eq("user_id", userId)
+        .eq("setor_chave", SETOR)
+        .maybeSingle(),
     ]);
     setProfile(perfilData || null);
-    setAcessos(acessosData || []);
+    setPapel(perfilData?.is_super_admin ? "admin" : acessoData?.papel || null);
   }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      if (session?.user) {
-        await carregarPerfilEAcessos(session.user.id);
-      } else {
+      if (session?.user) await carregar(session.user.id);
+      else {
         setProfile(null);
-        setAcessos([]);
+        setPapel(null);
       }
       setLoading(false);
     })();
-  }, [session, carregarPerfilEAcessos]);
+  }, [session, carregar]);
 
-  const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-  }, []);
-
-  // Reautentica com a senha atual antes de trocar — evita que uma
-  // sessão aberta em outro aparelho troque a senha sem confirmar
-  // que quem está pedindo realmente conhece a senha atual.
-  const trocarSenha = useCallback(
-    async (senhaAtual, novaSenha) => {
-      if (!profile?.email) throw new Error("Sessão inválida.");
-      const { error: authErr } = await supabase.auth.signInWithPassword({
-        email: profile.email,
-        password: senhaAtual,
-      });
-      if (authErr) throw new Error("Senha atual incorreta.");
-
-      const { error: updateErr } = await supabase.auth.updateUser({ password: novaSenha });
-      if (updateErr) throw updateErr;
-    },
-    [profile]
-  );
-
-  function papelNoSetor(setorChave) {
-    if (profile?.is_super_admin) return "admin";
-    return acessos.find((a) => a.setor_chave === setorChave)?.papel || null;
-  }
-
-  function temAcesso(setorChave) {
-    return papelNoSetor(setorChave) !== null;
-  }
+  const logout = useCallback(() => supabase.auth.signOut(), []);
 
   const value = useMemo(
     () => ({
       loading,
       session,
       profile,
-      acessos,
-      isSuperAdmin: !!profile?.is_super_admin,
+      papel, // null = sem acesso ao setor
+      podeEditar: papel === "admin" || papel === "colaborador",
+      podeAdministrar: papel === "admin", // criar/excluir evento
       logout,
-      trocarSenha,
-      papelNoSetor,
-      temAcesso,
-      recarregar: () => session?.user && carregarPerfilEAcessos(session.user.id),
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [loading, session, profile, acessos]
+    [loading, session, profile, papel]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

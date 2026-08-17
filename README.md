@@ -1,103 +1,46 @@
-# Portal DKP — Deutscher Klub Pernambuco
+# Eventos — Deutscher Klub Pernambuco
 
-Portal (shell) que reúne os setores do clube — Eventos, Patrimônio, RH,
-Financeiro e Secretaria — em um único ponto de entrada, com login único
-e permissões por setor. Cada setor pode ser um app independente,
-desenvolvido e implantado por equipes diferentes, e "plugado" ao portal
-sem precisar reescrever nada aqui.
+Painel de Produção de Eventos, migrado do protótipo estático (HTML +
+`window.storage`) para um app real: Supabase (Postgres + Auth + RLS +
+Realtime) e login compartilhado com o Portal DKP.
 
-## Arquitetura em uma imagem
+## O que mudou em relação ao protótipo
 
-```
-                         ┌─────────────────────────┐
-                         │   Portal (este repo)     │
-                         │  login · home · usuários │
-                         └────────────┬─────────────┘
-                                      │  Supabase Auth (JWT)
-                    ┌─────────────────┼─────────────────┐
-                    │                 │                 │
-             ┌──────▼─────┐   ┌───────▼──────┐   ┌──────▼──────┐
-             │  Eventos    │   │  Patrimônio   │   │  RH / Fin.  │
-             │ (iframe /   │   │ (app próprio, │   │ (em breve)  │
-             │  protótipo) │   │  Descartes)   │   │             │
-             └─────────────┘   └──────────────┘   └─────────────┘
-                                      │
-                          Mesmo projeto Supabase
-                       (Postgres + Auth compartilhados)
-```
+- **Sem senha fixa "1234" nem perfis próprios (equipe/convidado/visitante).**
+  Como só colaboradores do clube usam o portal, a autenticação e as
+  permissões agora vêm 100% do Supabase Auth + da tabela `acessos_setor`
+  do portal:
 
-Um único projeto Supabase serve de "cérebro" de identidade. Cada módulo
-mantém as próprias tabelas de negócio (ex.: `descartes`), mas todos leem
-`profiles`, `setores` e `acessos_setor` para saber quem é o usuário e o
-que ele pode fazer.
+  | Protótipo | Papel no portal (setor `eventos`) | Pode |
+  |---|---|---|
+  | equipe | `admin` | tudo: tarefas, criar/excluir evento |
+  | convidado | `colaborador` | editar tarefas, sem criar/excluir evento |
+  | visitante | `leitor` | só visualizar |
 
-## Por que essa abordagem (e não Module Federation)
+- **Dados em Postgres com RLS**, não em `window.storage`. Cada tabela
+  tem policy própria (`supabase/migrations/0002_eventos.sql`) — mesmo um
+  colaborador chamando a API direto não vê/edita o que o papel dele não
+  permite.
+- **Histórico de movimentação é uma tabela append-only de verdade**
+  (`eventos_tarefas_historico`), não um array dentro do JSON do evento —
+  fica íntegro mesmo se duas pessoas editarem a mesma tarefa ao mesmo
+  tempo.
+- **Atualização em tempo real via Realtime** do Supabase, no lugar do
+  botão "Atualizar" manual: se um colega muda o status de uma tarefa, a
+  tela de todo mundo atualiza sozinha.
+- **Layout em cards, mobile-first**, no lugar da tabela larga
+  (`min-width:1040px`) do protótipo, que não funcionava bem em celular.
 
-Como os módulos são construídos em paralelo, por pessoas/equipes
-diferentes, forçar tudo a viver num único build (Module Federation,
-monorepo com bundle único) cria acoplamento desnecessário: qualquer
-mudança em um módulo arrisca quebrar o build dos outros, e você
-precisaria coordenar releases. A abordagem aqui — **cada módulo é um
-deploy independente, o portal só aponta para eles** — deixa cada equipe
-liberar no seu próprio ritmo. O preço é abrir mão de transições
-"instantâneas" entre módulos (às vezes há um reload de página), o que é
-um trade-off aceitável para um portal interno.
+## Fases
 
-## Como plugar um módulo novo, passo a passo
+**Fase 1 (esta entrega) — Painel de Tarefas:**
+- Seletor de evento, criar/excluir evento (motivo obrigatório na exclusão).
+- KPIs (despesa aprovada, cotado e não aprovado, em aberto, sinalizadas).
+- Faixa de alerta para tarefas paradas perto da data do evento.
+- Filtros (busca, tipo, status, só sinalizadas).
+- Cards de tarefa com edição inline de status + modal completo de
+  edição + histórico de movimentação.
 
-<<<<<<< HEAD
-1. **Banco:** insira uma linha em `setores` (ou atualize o `status` de
-   `em_breve` para `ativo` quando o módulo tiver URL real):
-   ```sql
-   update public.setores set status = 'ativo' where chave = 'rh';
-   ```
-2. **Config:** em `src/config/modulos.js`, preencha a `url` do módulo
-   (ou aponte para a variável de ambiente `VITE_URL_RH` já prevista) e
-   escolha o `tipo`:
-   - `link-externo` — o módulo tem seu próprio deploy Vercel, com login
-     próprio via Supabase. Recomendado para módulos "grandes" como
-     Descartes/Patrimônio, RH, Financeiro.
-   - `iframe` — bom para protótipos simples ou páginas estáticas sem
-     necessidade de sessão própria (como o HTML de Eventos que hoje é
-     só front-end com dado mockado).
-   - `interno` — se decidirem trazer o código do módulo para dentro
-     deste monorepo como um pacote React, importado direto (mais
-     integrado, mas exige compartilhar o repositório).
-3. **Domínio único (opcional, mas recomendado para SSO):** adicione uma
-   entrada em `rewrites` no `vercel.json` apontando `/nome-do-setor/*`
-   para a URL do deploy daquele módulo. Assim tudo vive sob o mesmo
-   domínio (`portal.clubealemao.org.br/patrimonio`) e a sessão do
-   Supabase (guardada no localStorage do domínio) é compartilhada sem
-   nenhum código extra de SSO.
-4. Pronto — nenhuma outra tela do portal precisa mudar.
-
-## Segurança — decisões importantes
-
-- **RLS (Row Level Security) no Postgres**, não só checagem no
-  front-end. Mesmo que alguém abra o DevTools e chame a API do Supabase
-  direto, o banco recusa qualquer linha que a pessoa não deveria ver.
-  Veja `supabase/migrations/0001_init_portal.sql`.
-- **Criação de usuário só via Edge Function com `service_role`**
-  (`supabase/functions/create-user`). Isso segue exatamente o padrão que
-  o módulo de Descartes já usa — mantivemos por ser a forma correta:
-  criar usuário no client com `supabase.auth.signUp()` loga como a
-  pessoa nova e derruba a sessão do admin, além de exigir policies
-  perigosamente abertas. A Edge Function roda no servidor, confirma que
-  quem chamou é de fato super admin, e só então cria o usuário.
-- **Troca de senha pelo próprio usuário** (`src/pages/MinhaConta.jsx`):
-  antes de trocar, reautentica com a senha atual
-  (`signInWithPassword`), para impedir que uma sessão aberta em outro
-  aparelho troque a senha sem confirmar que a pessoa realmente conhece
-  a senha vigente.
-- **`service_role` key nunca chega ao front-end** — só existe como
-  variável de ambiente da Edge Function no painel do Supabase.
-- **CSP básica** já configurada em `index.html`, restringindo de onde o
-  app pode carregar script/estilo/conexão. Ajuste o domínio do seu
-  projeto Supabase antes de publicar.
-- **Isolamento de iframe:** módulos embutidos via `iframe` usam
-  `sandbox` para não ter acesso ao DOM/JS do portal.
-- **Nenhuma credencial em URL/query string.**
-=======
 **Fase 2 (esta entrega):**
 - **Ficha do evento** (`src/pages/FichaEvento.jsx`): horário, descrição,
   público, funcionamento das áreas do clube, patrocinadores (com logo),
@@ -128,53 +71,39 @@ um trade-off aceitável para um portal interno.
   visto tarefa por tarefa, no modal).
 - Anexos/fotos do evento em `eventos_tarefas` (o protótipo tinha um
   campo `imagens` por evento).
->>>>>>> ce469ce (Configura supabase)
 
 ## Rodando localmente
 
 ```bash
 npm install
-cp .env.example .env.local   # preencha com as chaves do seu projeto Supabase
+cp .env.example .env.local   # mesmo projeto Supabase do portal
 npm run dev
 ```
 
-## Publicando o schema no Supabase
+## Publicando o schema
+
+Depois de já ter rodado `0001_init_portal.sql` (do repositório do
+portal), rode este:
 
 ```bash
-# Cole o conteúdo de supabase/migrations/0001_init_portal.sql
-# no SQL Editor do painel do Supabase, ou:
+# Cole supabase/migrations/0002_eventos.sql no SQL Editor do Supabase,
+# ou:
 supabase db push
-
-# Deploy da Edge Function:
-supabase functions deploy create-user
 ```
 
-## Criando o primeiro administrador
+## Liberando acesso a um colaborador
 
-Como a criação de usuário passa pela Edge Function (que exige que quem
-chama já seja super admin), o **primeiro** administrador precisa ser
-criado manualmente, uma única vez:
+Não muda nada aqui — continua pelo portal, em **Usuários**, escolhendo
+o papel (`leitor` / `colaborador` / `admin`) no setor **Eventos**.
 
-1. No painel do Supabase → Authentication → Add user, crie a conta com
-   e-mail e senha.
-2. No SQL Editor, rode:
-   ```sql
-   insert into public.profiles (id, nome, email, ativo, is_super_admin)
-   values ('<uuid-do-usuario-criado>', 'Seu Nome', 'seu@email.com', true, true);
-   ```
-3. A partir daí, esse admin cria todos os outros pelo próprio portal,
-   em **Usuários**.
+## Integrando ao portal
 
-## Estrutura de pastas
+Este app é implantado como projeto Vercel próprio (mesmo padrão do
+Descartes). Quando tiver a URL de produção:
 
-```
-src/
-  config/modulos.js       -> registro dos módulos (único lugar a editar)
-  context/AuthContext.jsx -> sessão, perfil, acessos por setor
-  components/             -> Shell, ProtectedRoute, Field
-  pages/                  -> Login, Home, MinhaConta, AdminUsuarios, ModuloIframe
-  styles/                 -> tokens.css (marca), global.css
-supabase/
-  migrations/             -> schema SQL versionado
-  functions/create-user/  -> Edge Function de criação de usuário
-```
+1. No repositório do **portal**, em `src/config/modulos.js`, troque a
+   entrada `eventos` de `tipo: "iframe"` para `tipo: "link-externo"` e
+   preencha a URL (ou a variável `VITE_URL_EVENTOS`).
+2. No SQL do portal: `update public.setores set status = 'ativo' where chave = 'eventos';`
+3. (Opcional, para SSO automático) adicione um rewrite em
+   `vercel.json` do portal apontando `/eventos/*` para este deploy.

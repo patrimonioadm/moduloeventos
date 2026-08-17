@@ -1,27 +1,29 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { Loader2 } from "lucide-react";
 
-/**
- * requireSetor: se passado, exige que o usuário tenha ALGUM papel
- * nesse setor (via acessos_setor ou is_super_admin).
- * requireSuperAdmin: exige is_super_admin=true (tela de Usuários).
- */
-export function ProtectedRoute({ children, requireSetor, requireSuperAdmin }) {
-  const { loading, session, profile, temAcesso, isSuperAdmin } = useAuth();
+export function ProtectedRoute({ children }) {
+  const { loading, session, papel, profile } = useAuth();
 
   if (loading) {
     return (
       <div className="login-screen">
-        <Loader2 className="spin" />
+        <p>Carregando…</p>
       </div>
     );
   }
-
   if (!session) return <Navigate to="/login" replace />;
-  if (profile && profile.ativo === false) return <Navigate to="/login" replace />;
-  if (requireSuperAdmin && !isSuperAdmin) return <Navigate to="/" replace />;
-  if (requireSetor && !temAcesso(requireSetor)) return <Navigate to="/" replace />;
-
+  if (profile?.ativo === false) return <Navigate to="/login" replace />;
+  if (!papel) {
+    return (
+      <div className="login-screen">
+        <div className="login-card">
+          <p>
+            Sua conta não tem acesso ao setor de Eventos. Peça a um administrador do portal para
+            liberar seu acesso em <strong>Usuários</strong>.
+          </p>
+        </div>
+      </div>
+    );
+  }
   return children;
 }

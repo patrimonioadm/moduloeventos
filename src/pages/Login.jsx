@@ -1,17 +1,10 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { AlertTriangle, LogIn, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
-import { Field } from "../components/Field";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
   const [erro, setErro] = useState("");
   const [carregando, setCarregando] = useState(false);
   const navigate = useNavigate();
@@ -24,19 +17,9 @@ export default function Login() {
       if (data.session) navigate("/", { replace: true });
     });
   }, [navigate]);
-  async function handleSubmit(e) {
+
+  async function entrar(e) {
     e.preventDefault();
-    setLoading(true);
-    setError("");
-    const { error: err } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
-      password: senha,
-    });
-    setLoading(false);
-    if (err) {
-      // Mensagem genérica de propósito — não revelar se o e-mail existe
-      // ou não (evita enumeração de contas).
-      setError("E-mail ou senha inválidos.");
     setCarregando(true);
     setErro("");
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
@@ -51,50 +34,26 @@ export default function Login() {
   return (
     <div className="login-screen">
       <div className="login-card">
-        <div className="brand-mark">
-          <div className="brand-ring">DKP</div>
-          <div>
-            <p className="brand-title">Portal DKP</p>
-            <p className="brand-sub">Deutscher Klub Pernambuco</p>
-          </div>
+        <div className="marca" style={{ color: "var(--tinta)", marginBottom: 20 }}>
+          Painel de Produção
+          <span>Eventos · Deutscher Klub Pernambuco</span>
         </div>
-
-        <form onSubmit={handleSubmit} className="login-form">
-          <Field label="E-mail">
-            <input
-              type="email"
-              required
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="seu.nome@dkp.org.br"
-            />
-          </Field>
-          <Field label="Senha">
-            <input
-              type="password"
-              required
-              autoComplete="current-password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
-              placeholder="••••••••"
-            />
-          </Field>
-          {error && (
-            <p className="form-error">
-              <AlertTriangle size={14} /> {error}
-            </p>
-          )}
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? <Loader2 size={16} className="spin" /> : <LogIn size={16} />} Entrar
-          </button>
+        <form onSubmit={entrar} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="campo">
+            <label>E-mail</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+          </div>
+          <div className="campo">
+            <label>Senha</label>
+            <input type="password" required value={senha} onChange={(e) => setSenha(e.target.value)} autoComplete="current-password" />
+          </div>
+          {erro && <p className="erroCampo">{erro}</p>}
+          <button className="btn" disabled={carregando}>{carregando ? "Entrando…" : "Entrar"}</button>
         </form>
-
-        <p className="login-hint">
-          Não tem conta? Peça a um administrador do clube para te cadastrar.
+        <p style={{ fontSize: 12.5, color: "var(--aco)", marginTop: 18, textAlign: "center" }}>
+          Acesso liberado apenas para colaboradores do clube, cadastrados pelo administrador do portal.
         </p>
       </div>
     </div>
   );
-  }
 }
