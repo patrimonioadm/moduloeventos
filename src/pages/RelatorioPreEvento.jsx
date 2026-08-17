@@ -88,8 +88,14 @@ export default function RelatorioPreEvento({ onFechar }) {
                     {p.logoUrl && <img src={p.logoUrl} alt={p.nome} />}
                     <div className="patroNome">{p.nome}</div>
                   </div>
+                  <p><strong>Valor do patrocínio:</strong> {p.valor ? dinheiro(p.valor) : "a definir"}{p.forma ? ` (${p.forma})` : ""}</p>
+                  <p><strong>Ativação:</strong> {p.ativacao || <span className="semDado">a definir</span>}{p.pendencia ? ` — pendência: ${p.pendencia}` : ""}</p>
+                  <p><strong>Convidados:</strong> {p.convidados ? `${p.convidados} convidados` : "a definir"}{p.obsConvidados ? ` — ${p.obsConvidados}` : ""}</p>
                 </div>
               ))}
+              <p className="semDado">
+                Soma dos patrocínios registrados: {dinheiro(dadosEvento.patrocinadores.reduce((s, p) => s + (Number(p.valor) || 0), 0))} (controle interno).
+              </p>
             </section>
           )}
 

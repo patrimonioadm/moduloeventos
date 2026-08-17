@@ -16,6 +16,7 @@ export function EventosProvider({ children }) {
   const [eventos, setEventos] = useState([]);
   const [eventoId, setEventoId] = useState(null);
   const [tarefas, setTarefas] = useState([]);
+  const [ultimasMovimentacoes, setUltimasMovimentacoes] = useState({}); // { [tarefaId]: {quando, quem_nome} }
   const [loading, setLoading] = useState(true);
 
   const carregarEventos = useCallback(async () => {
@@ -28,9 +29,27 @@ export function EventosProvider({ children }) {
     return data || [];
   }, []);
 
+  const carregarUltimasMovimentacoes = useCallback(async (idsTarefas) => {
+    if (!idsTarefas.length) {
+      setUltimasMovimentacoes({});
+      return;
+    }
+    const { data } = await supabase
+      .from("eventos_tarefas_historico")
+      .select("tarefa_id, quando, quem_nome")
+      .in("tarefa_id", idsTarefas)
+      .order("quando", { ascending: false });
+    const mapa = {};
+    (data || []).forEach((h) => {
+      if (!mapa[h.tarefa_id]) mapa[h.tarefa_id] = h; // primeira ocorrência = mais recente (já ordenado)
+    });
+    setUltimasMovimentacoes(mapa);
+  }, []);
+
   const carregarTarefas = useCallback(async (idEvento) => {
     if (!idEvento) {
       setTarefas([]);
+      setUltimasMovimentacoes({});
       return;
     }
     const { data } = await supabase
@@ -40,7 +59,8 @@ export function EventosProvider({ children }) {
       .eq("excluido", false)
       .order("prazo", { ascending: true, nullsFirst: false });
     setTarefas(data || []);
-  }, []);
+    await carregarUltimasMovimentacoes((data || []).map((t) => t.id));
+  }, [carregarUltimasMovimentacoes]);
 
   // carga inicial: escolhe o próximo evento futuro (ou o mais recente) por padrão
   useEffect(() => {
@@ -62,10 +82,10 @@ export function EventosProvider({ children }) {
     if (eventoId) carregarTarefas(eventoId);
   }, [eventoId, carregarTarefas]);
 
-  // realtime: qualquer mudança nas tarefas do evento aberto recarrega a lista
+  // realtime: qualquer mudança nas tarefas OU no histórico do evento aberto recarrega
   useEffect(() => {
     if (!eventoId) return;
-    const canal = supabase
+    const canalTarefas = supabase
       .channel(`tarefas-evento-${eventoId}`)
       .on(
         "postgres_changes",
@@ -73,7 +93,20 @@ export function EventosProvider({ children }) {
         () => carregarTarefas(eventoId)
       )
       .subscribe();
-    return () => supabase.removeChannel(canal);
+    // histórico não tem evento_id direto, então escuta a tabela toda (baixo volume,
+    // aceitável para um clube) e recarrega — o recarregarTarefas já atualiza as duas coisas juntas.
+    const canalHistorico = supabase
+      .channel(`historico-evento-${eventoId}`)
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "eventos_tarefas_historico" },
+        () => carregarTarefas(eventoId)
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canalTarefas);
+      supabase.removeChannel(canalHistorico);
+    };
   }, [eventoId, carregarTarefas]);
 
   const evento = useMemo(() => eventos.find((e) => e.id === eventoId) || null, [eventos, eventoId]);
@@ -85,6 +118,7 @@ export function EventosProvider({ children }) {
     eventoId,
     setEventoId,
     tarefas,
+    ultimasMovimentacoes,
     recarregarEventos: carregarEventos,
     recarregarTarefas: () => carregarTarefas(eventoId),
   };

@@ -78,7 +78,7 @@ export default function FichaEvento({ onFechar, notify }) {
   }
 
   function addPatrocinador() {
-    setPatrocinadores((p) => [...p, { nome: "", logoUrl: null }]);
+    setPatrocinadores((p) => [...p, { nome: "", logoUrl: null, valor: "", forma: "", ativacao: "", pendencia: "", convidados: "", obsConvidados: "" }]);
   }
   function addProgramacao() {
     setProgramacao((p) => [...p, { nome: "", horario: "" }]);
@@ -201,7 +201,7 @@ export default function FichaEvento({ onFechar, notify }) {
                 <div className="grade">
                   <input
                     placeholder="Nome do patrocinador"
-                    value={p.nome}
+                    value={p.nome || ""}
                     disabled={somenteLeitura}
                     onChange={(e) => {
                       const copia = [...patrocinadores];
@@ -212,6 +212,87 @@ export default function FichaEvento({ onFechar, notify }) {
                   {!somenteLeitura && <input type="file" accept="image/*" onChange={(e) => handleLogoPatrocinador(i, e)} />}
                 </div>
                 {p.logoUrl && <img className="logoMini" src={p.logoUrl} alt={p.nome} />}
+
+                <div className="grade">
+                  <div className="campo">
+                    <label>Cota (R$)</label>
+                    <input
+                      type="number" step="0.01" min="0"
+                      value={p.valor ?? ""}
+                      disabled={somenteLeitura}
+                      onChange={(e) => {
+                        const copia = [...patrocinadores];
+                        copia[i] = { ...copia[i], valor: e.target.value };
+                        setPatrocinadores(copia);
+                      }}
+                    />
+                  </div>
+                  <div className="campo">
+                    <label>Forma</label>
+                    <input
+                      placeholder="R$ 10.000 em produto e R$ 15.000 em dinheiro"
+                      value={p.forma || ""}
+                      disabled={somenteLeitura}
+                      onChange={(e) => {
+                        const copia = [...patrocinadores];
+                        copia[i] = { ...copia[i], forma: e.target.value };
+                        setPatrocinadores(copia);
+                      }}
+                    />
+                  </div>
+                  <div className="campo">
+                    <label>Convidados</label>
+                    <input
+                      type="number" min="0"
+                      value={p.convidados ?? ""}
+                      disabled={somenteLeitura}
+                      onChange={(e) => {
+                        const copia = [...patrocinadores];
+                        copia[i] = { ...copia[i], convidados: e.target.value };
+                        setPatrocinadores(copia);
+                      }}
+                    />
+                  </div>
+                  <div className="campo">
+                    <label>Observação sobre convidados</label>
+                    <input
+                      value={p.obsConvidados || ""}
+                      disabled={somenteLeitura}
+                      onChange={(e) => {
+                        const copia = [...patrocinadores];
+                        copia[i] = { ...copia[i], obsConvidados: e.target.value };
+                        setPatrocinadores(copia);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className="campo">
+                  <label>Ativação</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Uma ação por linha…"
+                    value={p.ativacao || ""}
+                    disabled={somenteLeitura}
+                    onChange={(e) => {
+                      const copia = [...patrocinadores];
+                      copia[i] = { ...copia[i], ativacao: e.target.value };
+                      setPatrocinadores(copia);
+                    }}
+                  />
+                </div>
+                <div className="campo">
+                  <label>Pendência</label>
+                  <input
+                    placeholder="Ex.: falta enviar a arte do banner"
+                    value={p.pendencia || ""}
+                    disabled={somenteLeitura}
+                    onChange={(e) => {
+                      const copia = [...patrocinadores];
+                      copia[i] = { ...copia[i], pendencia: e.target.value };
+                      setPatrocinadores(copia);
+                    }}
+                  />
+                </div>
                 {!somenteLeitura && (
                   <div className="fimLinha">
                     <button type="button" className="btn linha pequeno" onClick={() => remover(patrocinadores, setPatrocinadores, i)}>Remover</button>

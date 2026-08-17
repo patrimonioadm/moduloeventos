@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
-import { supabase } from "../lib/supabaseClient";
+import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useEventos } from "../context/EventosContext";
+import { useEventosConfig } from "../lib/useEventosConfig";
+import { TabelaTarefas } from "../components/TabelaTarefas";
 import { TarefaModal } from "../components/TarefaModal";
 import { HistoricoModal } from "../components/HistoricoModal";
 import { NovoEventoModal } from "../components/NovoEventoModal";
@@ -11,16 +12,13 @@ import RelatorioPreEvento from "./RelatorioPreEvento";
 import RelatorioPosEvento from "./RelatorioPosEvento";
 import Logomarcas from "./Logomarcas";
 import { baixarCsvTarefas } from "../lib/csv";
-import {
-  STATUS, TIPOS, DIAS_ALERTA, HORAS_PARADA,
-  analisar, dataBR, dinheiro, diasEntre, hojeSP, plural,
-} from "../lib/dominio";
+import { DIAS_ALERTA, HORAS_PARADA, analisar, dataBR, dinheiro, diasEntre, hojeSP, plural } from "../lib/dominio";
 
 export default function Painel() {
   const { profile, papel, podeEditar, podeAdministrar, logout } = useAuth();
-  const { loading, eventos, evento, eventoId, setEventoId, tarefas, recarregarTarefas } = useEventos();
+  const { loading, eventos, evento, eventoId, setEventoId, tarefas, ultimasMovimentacoes, recarregarTarefas } = useEventos();
+  const { config } = useEventosConfig();
 
-  const [filtros, setFiltros] = useState({ busca: "", tipo: "", status: "", soAlerta: false });
   const [tarefaEditando, setTarefaEditando] = useState(undefined); // undefined = fechado, null = nova, obj = editar
   const [historicoDe, setHistoricoDe] = useState(null);
   const [novoEventoAberto, setNovoEventoAberto] = useState(false);
@@ -36,53 +34,16 @@ export default function Painel() {
     setTimeout(() => setToast(null), 3200);
   }
 
-  // Como não guardamos "última movimentação" localmente (o histórico é
-  // append-only e vive na outra tabela), aproximamos o "parada há Xh"
-  // usando atualizado_em da própria tarefa — suficiente para o alerta
-  // visual; o detalhe fino fica no modal de Histórico.
-  const analises = useMemo(() => {
-    if (!evento) return [];
-    return tarefas.map((t) => ({
-      t,
-      a: analisar(t, evento.data, t.atualizado_em ? { quando: t.atualizado_em } : null),
-    }));
-  }, [tarefas, evento]);
-
-  const kpis = useMemo(() => {
-    const aprovadas = analises.filter((x) => x.t.status !== "nao_aprovado");
-    const total = aprovadas.reduce((s, x) => s + (Number(x.t.valor) || 0), 0);
-    const recusado = analises.filter((x) => x.t.status === "nao_aprovado").reduce((s, x) => s + (Number(x.t.valor) || 0), 0);
-    const emAberto = aprovadas.filter((x) => !x.a.fechada).length;
-    const feitas = aprovadas.filter((x) => x.t.status === "feito").length;
-    const alertas = analises.filter((x) => x.a.alerta).length;
-    return { total, recusado, emAberto, feitas, totalAprovadas: aprovadas.length, alertas };
-  }, [analises]);
-
-  const listaFiltrada = useMemo(() => {
-    const busca = filtros.busca.trim().toLowerCase();
-    let lista = analises.filter(({ t, a }) => {
-      if (filtros.soAlerta && !a.alerta) return false;
-      if (filtros.tipo && t.tipo !== filtros.tipo) return false;
-      if (filtros.status && t.status !== filtros.status) return false;
-      if (busca && ![t.titulo, t.tipo, t.empresa, t.contato, t.observacao, t.responsavel]
-        .join(" ").toLowerCase().includes(busca)) return false;
-      return true;
-    });
-    lista.sort((x, y) => {
-      if (x.a.alerta !== y.a.alerta) return x.a.alerta ? -1 : 1;
-      return (x.t.prazo || "9999-99-99").localeCompare(y.t.prazo || "9999-99-99");
-    });
-    return lista;
-  }, [analises, filtros]);
-
-  async function mudarStatusRapido(tarefa, novoStatus) {
-    const { error } = await supabase.from("eventos_tarefas").update({ status: novoStatus }).eq("id", tarefa.id);
-    if (error) { notify("ruim", error.message); return; }
-    await supabase.from("eventos_tarefas_historico").insert({
-      tarefa_id: tarefa.id, quem_id: profile.id, quem_nome: profile.nome, status_novo: novoStatus, nota: "",
-    });
-    recarregarTarefas();
-  }
+  const analises = evento ? tarefas.map((t) => ({ t, a: analisar(t, evento.data, ultimasMovimentacoes[t.id] || null) })) : [];
+  const aprovadas = analises.filter((x) => x.t.status !== "nao_aprovado");
+  const kpis = {
+    total: aprovadas.reduce((s, x) => s + (Number(x.t.valor) || 0), 0),
+    recusado: analises.filter((x) => x.t.status === "nao_aprovado").reduce((s, x) => s + (Number(x.t.valor) || 0), 0),
+    emAberto: aprovadas.filter((x) => !x.a.fechada).length,
+    feitas: aprovadas.filter((x) => x.t.status === "feito").length,
+    totalAprovadas: aprovadas.length,
+    alertas: analises.filter((x) => x.a.alerta).length,
+  };
 
   const dias = evento ? diasEntre(hojeSP(), evento.data) : null;
   const contagem = dias === null ? "—" : dias === 0 ? "HOJE" : dias > 0 ? `D-${dias}` : `+${Math.abs(dias)}`;
@@ -172,97 +133,23 @@ export default function Painel() {
                 <strong>{plural(kpis.alertas, "tarefa parada", "tarefas paradas")}</strong>
                 <p>
                   O evento é {dias === 0 ? "hoje" : `em ${plural(dias, "dia", "dias")}`} e {kpis.alertas === 1 ? "esta tarefa está" : "estas tarefas estão"} sem
-                  atualização há mais de {HORAS_PARADA}h. Defina o responsável e o status.
+                  registro ou sem atualização há mais de {HORAS_PARADA}h. Defina o responsável e o status.
                 </p>
               </div>
             )}
 
-            <div className="filtros">
-              <div className="campos">
-                <div className="campo" style={{ gridColumn: "1 / -1" }}>
-                  <label>Buscar</label>
-                  <input
-                    placeholder="atividade, empresa, contato, observação…"
-                    value={filtros.busca}
-                    onChange={(e) => setFiltros((f) => ({ ...f, busca: e.target.value }))}
-                  />
-                </div>
-                <div className="campo">
-                  <label>Tipo</label>
-                  <select value={filtros.tipo} onChange={(e) => setFiltros((f) => ({ ...f, tipo: e.target.value }))}>
-                    <option value="">Todos</option>
-                    {TIPOS.map((t) => <option key={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div className="campo">
-                  <label>Status</label>
-                  <select value={filtros.status} onChange={(e) => setFiltros((f) => ({ ...f, status: e.target.value }))}>
-                    <option value="">Todos</option>
-                    {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.rotulo}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="fim">
-                <label className="marcar">
-                  <input
-                    type="checkbox"
-                    checked={filtros.soAlerta}
-                    onChange={(e) => setFiltros((f) => ({ ...f, soAlerta: e.target.checked }))}
-                  /> Só as sinalizadas
-                </label>
-                <span style={{ flex: 1 }} />
-                <span style={{ fontFamily: "var(--dado)", fontSize: 12 }}>{listaFiltrada.length} de {tarefas.length} itens</span>
-                {podeEditar && <button className="btn" onClick={() => setTarefaEditando(null)}>+ Incluir tarefa</button>}
-              </div>
-            </div>
-
-            {listaFiltrada.length === 0 ? (
-              <div className="vazio">Nenhuma tarefa com esses filtros.</div>
-            ) : (
-              <ul className="lista-tarefas" style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                {listaFiltrada.map(({ t, a }) => (
-                  <li
-                    key={t.id}
-                    className={`tcard ${a.alerta ? "alerta" : ""} ${t.status === "nao_aprovado" ? "recusada" : ""}`}
-                  >
-                    <div className="tcard-topo">
-                      <div>
-                        <div className="atividade">{t.titulo}</div>
-                        <span className="tipo">{t.tipo}</span>
-                        {a.alerta && (
-                          <span className="selo aviso">
-                            ⚠ {a.semMov ? "Sem registro" : "Parada"}
-                          </span>
-                        )}
-                        {a.prazoVencido && <span className="selo venceu">Prazo vencido</span>}
-                      </div>
-                      <div className="cifra">{t.valor ? dinheiro(t.valor) : "—"}</div>
-                    </div>
-
-                    <div className="tcard-linha">
-                      <span>{t.empresa || "sem empresa"}{t.contato ? ` · ${t.contato}` : ""}</span>
-                      <span>{t.prazo ? `prazo ${dataBR(t.prazo)}` : "sem prazo"}</span>
-                      <span>{t.responsavel || "sem responsável"}</span>
-                    </div>
-
-                    {t.observacao && <p style={{ fontSize: 12.5, color: "var(--aco)", margin: "6px 0 0" }}>{t.observacao}</p>}
-
-                    <div className="tcard-acoes">
-                      <select
-                        data-s={t.status}
-                        value={t.status}
-                        disabled={!podeEditar}
-                        onChange={(e) => mudarStatusRapido(t, e.target.value)}
-                      >
-                        {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.rotulo}</option>)}
-                      </select>
-                      <button className="icone" title="Histórico" onClick={() => setHistoricoDe(t)}>🕘</button>
-                      {podeEditar && <button className="icone" title="Editar" onClick={() => setTarefaEditando(t)}>✎</button>}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <TabelaTarefas
+              tarefas={tarefas}
+              evento={evento}
+              ultimasMovimentacoes={ultimasMovimentacoes}
+              equipe={config.equipe_operacao}
+              podeEditar={podeEditar}
+              profile={profile}
+              notify={notify}
+              onHistorico={setHistoricoDe}
+              onEditar={setTarefaEditando}
+              onIncluir={() => setTarefaEditando(null)}
+            />
           </>
         )}
       </main>

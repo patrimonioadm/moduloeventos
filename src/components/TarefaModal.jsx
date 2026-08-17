@@ -2,13 +2,13 @@ import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useEventos } from "../context/EventosContext";
+import { useEventosConfig } from "../lib/useEventosConfig";
 import { STATUS, TIPOS, secaoPorTipo } from "../lib/dominio";
-
-const EQUIPE_PADRAO = []; // fase 2: puxar da tabela de equipe de operação; por ora, campo livre
 
 export function TarefaModal({ tarefa, onClose, notify }) {
   const { profile } = useAuth();
   const { eventoId, recarregarTarefas } = useEventos();
+  const { config } = useEventosConfig();
   const editando = !!tarefa?.id;
 
   const [titulo, setTitulo] = useState(tarefa?.titulo || "");
@@ -115,7 +115,10 @@ export function TarefaModal({ tarefa, onClose, notify }) {
             </div>
             <div className="campo">
               <label>Responsável</label>
-              <input value={responsavel} onChange={(e) => setResponsavel(e.target.value)} placeholder="Nome do colaborador" />
+              <select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
+                <option value="">— sem resp.</option>
+                {config.equipe_operacao.map((p) => <option key={p.nome} value={p.nome}>{p.nome}</option>)}
+              </select>
             </div>
             <div className="campo">
               <label>Empresa</label>

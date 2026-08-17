@@ -53,6 +53,19 @@ export function relativo(quando) {
   return `há ${d} ${d === 1 ? "dia" : "dias"}`;
 }
 
+const fmt = (tz, opc) => new Intl.DateTimeFormat("pt-BR", { timeZone: tz, ...opc });
+export function horaEm(tz, quando) {
+  return fmt(tz, { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(new Date(quando));
+}
+export function soHora(tz, quando) {
+  return fmt(tz, { hour: "2-digit", minute: "2-digit" }).format(new Date(quando));
+}
+
+// remove acentos para busca/ordenação (equivalente ao semAcento do protótipo)
+export function semAcento(s) {
+  return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
 export const plural = (n, s, p) => `${n} ${n === 1 ? s : p}`;
 
 export const dinheiro = (n) => (Number(n) || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

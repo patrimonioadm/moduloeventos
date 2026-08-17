@@ -15,6 +15,7 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
   const [dadosEvento, setDadosEvento] = useState(null);
   const [pos, setPos] = useState(POS_VAZIO);
   const [situacoesProgramacao, setSituacoesProgramacao] = useState([]);
+  const [patrociniosPos, setPatrociniosPos] = useState([]); // [{ valorRecebido, obs }]
   const [salvando, setSalvando] = useState(false);
 
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
         setDadosEvento(data);
         setPos({ ...POS_VAZIO, ...(data.pos_evento || {}) });
         setSituacoesProgramacao((data.programacao || []).map((p) => p.situacao || "nao_avaliado"));
+        setPatrociniosPos((data.patrocinadores || []).map((p) => ({ valorRecebido: p.valorRecebido || "", obs: p.obsPos || "" })));
       }
     })();
   }, [eventoId]);
@@ -34,9 +36,12 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
       const programacaoAtualizada = (dadosEvento.programacao || []).map((p, i) => ({
         ...p, situacao: situacoesProgramacao[i],
       }));
+      const patrocinadoresAtualizados = (dadosEvento.patrocinadores || []).map((p, i) => ({
+        ...p, valorRecebido: patrociniosPos[i]?.valorRecebido || "", obsPos: patrociniosPos[i]?.obs || "",
+      }));
       const { error } = await supabase
         .from("eventos")
-        .update({ pos_evento: pos, programacao: programacaoAtualizada })
+        .update({ pos_evento: pos, programacao: programacaoAtualizada, patrocinadores: patrocinadoresAtualizados })
         .eq("id", eventoId);
       if (error) throw error;
       notify("sucesso", "Resultado do pós-evento salvo.");
@@ -96,6 +101,51 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
               </div>
             </div>
           </section>
+
+          {(dadosEvento.patrocinadores || []).length > 0 && (
+            <section>
+              <h2>Patrocínio — previsto × recebido</h2>
+              <table>
+                <thead><tr><th>Patrocinador</th><th className="dir">Previsto</th><th className="dir">Recebido</th><th>Observação</th></tr></thead>
+                <tbody>
+                  {dadosEvento.patrocinadores.map((p, i) => (
+                    <tr key={i}>
+                      <td>{p.nome}</td>
+                      <td className="dir">{p.valor ? dinheiro(p.valor) : "—"}</td>
+                      <td className="dir">
+                        {podeAdministrar ? (
+                          <input
+                            type="number" step="0.01" min="0" className="campoInline naoImprime"
+                            value={patrociniosPos[i]?.valorRecebido || ""}
+                            onChange={(e) => {
+                              const copia = [...patrociniosPos];
+                              copia[i] = { ...copia[i], valorRecebido: e.target.value };
+                              setPatrociniosPos(copia);
+                            }}
+                          />
+                        ) : null}
+                        <span>{patrociniosPos[i]?.valorRecebido ? dinheiro(patrociniosPos[i].valorRecebido) : "não informado"}</span>
+                      </td>
+                      <td>
+                        {podeAdministrar ? (
+                          <input
+                            className="campoInline naoImprime"
+                            value={patrociniosPos[i]?.obs || ""}
+                            onChange={(e) => {
+                              const copia = [...patrociniosPos];
+                              copia[i] = { ...copia[i], obs: e.target.value };
+                              setPatrociniosPos(copia);
+                            }}
+                          />
+                        ) : null}
+                        <span>{patrociniosPos[i]?.obs || "—"}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
 
           {(dadosEvento.programacao || []).length > 0 && (
             <section>

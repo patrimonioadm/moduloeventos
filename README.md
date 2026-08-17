@@ -33,6 +33,40 @@ Realtime) e login compartilhado com o Portal DKP.
 
 ## Fases
 
+**Fase 3 (esta entrega) — paridade rigorosa com o protótipo HTML:**
+- **Tabela de tarefas** (`src/components/TabelaTarefas.jsx`) substituiu a
+  visão em cards. Reproduz exatamente as colunas do protótipo —
+  Atividade, Tipo, Empresa, Contato, Valor, Prazo, Status, Responsável,
+  Observações, Atualização, Ações — incluindo:
+  - Ordenação por clique no cabeçalho (seta ▲/▼), com as tarefas
+    sinalizadas sempre no topo, como no original.
+  - Edição inline de Empresa e Contato direto na célula (salva ao sair
+    do campo, com um destaque verde de confirmação); Status e
+    Responsável salvam ao escolher no seletor da própria linha.
+  - Link de "ligar" automático quando o contato parece um telefone.
+  - Filtro por Responsável e por Empresa (além dos já existentes:
+    busca, tipo, status, só sinalizadas) e botão "Limpar filtros".
+  - Rodapé com a soma dos itens exibidos.
+  - Coluna Atualização com duplo fuso horário (São Paulo e Berlim) —
+    detalhe do protótipo original, pensado para o Reilton acompanhar
+    de fora do Brasil.
+  - A tabela rola horizontalmente em telas pequenas (como no
+    protótipo); adaptei para rolar dentro de um contêiner com altura
+    máxima (em vez de rolar a página toda), pra não brigar com a barra
+    superior fixa do portal.
+  - Responsável agora é escolhido a partir da **equipe de operação**
+    cadastrada em Logomarcas (substitui a lista de 5 nomes fixos do
+    protótipo por uma lista editável, já que o controle de quem pode
+    editar o quê passou a ser via papel do portal, não senha
+    individual).
+- **Patrocinador** ganhou os campos que faltavam: **cota (valor)**,
+  forma de pagamento, ativação combinada, pendência, número de
+  convidados e observação sobre convidados — nos três lugares:
+  Ficha do evento, Relatório pré-evento (com soma total das cotas) e
+  Relatório pós-evento (comparativo previsto × recebido por
+  patrocinador).
+
+
 **Fase 1 (esta entrega) — Painel de Tarefas:**
 - Seletor de evento, criar/excluir evento (motivo obrigatório na exclusão).
 - KPIs (despesa aprovada, cotado e não aprovado, em aberto, sinalizadas).
