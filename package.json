@@ -18,11 +18,9 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-<<<<<<< HEAD
     "eslint": "^8.57.0",
     "eslint-plugin-react-hooks": "^4.6.2",
-=======
->>>>>>> ce469ce (Configura supabase)
-    "vite": "^8.2.1"
+    "vite": "^5.4.0"
   }
+
 }
