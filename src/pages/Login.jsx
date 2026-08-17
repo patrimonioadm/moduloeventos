@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, LogIn, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabaseClient";
 import { Field } from "../components/Field";
 
@@ -10,7 +12,18 @@ export default function Login() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const [erro, setErro] = useState("");
+  const [carregando, setCarregando] = useState(false);
+  const navigate = useNavigate();
 
+  // Segunda camada de segurança: se a pessoa já tem sessão válida (ex.:
+  // voltou pra /login manualmente, ou o signIn resolveu antes do
+  // navigate() abaixo terminar de disparar), manda pro painel direto.
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) navigate("/", { replace: true });
+    });
+  }, [navigate]);
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
@@ -24,6 +37,12 @@ export default function Login() {
       // Mensagem genérica de propósito — não revelar se o e-mail existe
       // ou não (evita enumeração de contas).
       setError("E-mail ou senha inválidos.");
+    setCarregando(true);
+    setErro("");
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
+    setCarregando(false);
+    if (error) {
+      setErro("E-mail ou senha inválidos.");
       return;
     }
     navigate("/", { replace: true });
@@ -77,4 +96,5 @@ export default function Login() {
       </div>
     </div>
   );
+  }
 }
