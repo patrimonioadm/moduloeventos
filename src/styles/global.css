@@ -72,31 +72,31 @@ select, input, textarea { font-family: var(--corpo); font-size: 14px; color: var
 /* ---------- tabela (paridade com o protótipo original) ---------- */
 .largo { grid-column: 1 / -1; }
 .rolagem { overflow: auto; max-height: 65vh; border: 1px solid var(--linha); border-radius: 8px; background: var(--papel); }
-table { table-layout: fixed; width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; }
-table thead th { position: sticky; top: 0; z-index: 2; background: var(--tinta); color: #fff; text-align: left;
+.rolagem table { table-layout: fixed; width: 100%; min-width: 1040px; border-collapse: separate; border-spacing: 0; }
+.rolagem table thead th { position: sticky; top: 0; z-index: 2; background: var(--tinta); color: #fff; text-align: left;
   font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; line-height: 1.2;
   padding: 8px; white-space: normal; border-bottom: 2px solid var(--tape); }
-table thead th.dir { text-align: right; }
-table thead th .seta { color: #fff; font-size: 9px; margin-left: 3px; opacity: .9; }
-table thead th.ord { cursor: pointer; user-select: none; }
-table thead th.ord:hover { background: #243342; }
-tbody td { padding: 8px; border-bottom: 1px solid var(--linha); vertical-align: top; font-size: 13px; overflow-wrap: anywhere; }
-tbody tr.alerta td { background: #fffcf0; }
-tbody tr.alerta td.flag { background: var(--tape); }
-tbody tr.recusada td { color: var(--morto); }
-tbody tr.recusada .atividade { text-decoration: line-through; color: var(--morto); }
-td.flag { padding: 0; width: 6px; }
+.rolagem table thead th.dir { text-align: right; }
+.rolagem table thead th .seta { color: #fff; font-size: 9px; margin-left: 3px; opacity: .9; }
+.rolagem table thead th.ord { cursor: pointer; user-select: none; }
+.rolagem table thead th.ord:hover { background: #243342; }
+.rolagem tbody td { padding: 8px; border-bottom: 1px solid var(--linha); vertical-align: top; font-size: 13px; overflow-wrap: anywhere; }
+.rolagem tbody tr.alerta td { background: #fffcf0; }
+.rolagem tbody tr.alerta td.flag { background: var(--tape); }
+.rolagem tbody tr.recusada td { color: var(--morto); }
+.rolagem tbody tr.recusada .atividade { text-decoration: line-through; color: var(--morto); }
+.rolagem td.flag { padding: 0; width: 6px; }
 .mono { font-family: var(--dado); font-size: 12px; }
 .cifra { font-family: var(--dado); font-size: 12.5px; text-align: right; white-space: nowrap; }
 .obs { font-size: 12px; color: var(--aco); line-height: 1.35; }
 .vazioCampo { color: #a9b4bd; font-style: italic; font-size: 12px; }
 .prazo em { display: block; font-style: normal; font-size: 11px; color: var(--aco); font-family: var(--corpo); }
 .prazo.perto em { color: var(--alerta); font-weight: 600; }
-td select, td input.celula { width: 100%; min-width: 0; font-size: 12px; padding: 5px 6px; }
-td select[data-s="feito"] { color: var(--ok); border-color: #a9cfc0; }
-td select[data-s="em_andamento"] { color: var(--andamento); border-color: #a8c4da; }
-td select[data-s="nao_feito"] { color: var(--alerta); border-color: #e0b0a6; }
-td select[data-s="nao_aprovado"] { color: var(--morto); }
+.rolagem td select, .rolagem td input.celula { width: 100%; min-width: 0; font-size: 12px; padding: 5px 6px; }
+.rolagem td select[data-s="feito"] { color: var(--ok); border-color: #a9cfc0; }
+.rolagem td select[data-s="em_andamento"] { color: var(--andamento); border-color: #a8c4da; }
+.rolagem td select[data-s="nao_feito"] { color: var(--alerta); border-color: #e0b0a6; }
+.rolagem td select[data-s="nao_aprovado"] { color: var(--morto); }
 input.celula { background: transparent; border: 1px solid transparent; border-radius: 4px; }
 input.celula:hover:not(:disabled) { border-color: var(--linha); background: #fff; }
 input.celula:focus { border-color: var(--andamento); background: #fff; }
@@ -105,7 +105,7 @@ input.celula.salvo { border-color: var(--ok); background: #eaf5f0; }
 .acoes { display: flex; gap: 4px; }
 .icone { border: 1px solid var(--linha); background: #fff; border-radius: 5px; width: 27px; height: 26px; cursor: pointer; font-size: 11px; color: var(--aco); padding: 0; }
 .icone:hover { border-color: var(--tinta); color: var(--tinta); }
-tfoot td { padding: 9px 8px; font-family: var(--dado); font-size: 12.5px; background: #e9eef1; border-top: 2px solid var(--tinta); font-weight: 500; }
+.rolagem tfoot td { padding: 9px 8px; font-family: var(--dado); font-size: 12.5px; background: #e9eef1; border-top: 2px solid var(--tinta); font-weight: 500; }
 a.contato { color: var(--andamento); text-decoration: none; margin-left: 4px; }
 .rodapeNota { margin-top: 16px; font-size: 12px; color: var(--aco); border-top: 1px solid var(--linha); padding-top: 10px; }
 .rodapeNota b { color: var(--tinta); }
@@ -124,7 +124,7 @@ a.contato { color: var(--andamento); text-decoration: none; margin-left: 4px; }
 
 .vazio { background: var(--papel); border: 1px dashed var(--linha); border-radius: 8px; padding: 24px; text-align: center; color: var(--aco); font-size: 14px; }
 
-.fundo { position: fixed; inset: 0; background: rgba(20,29,38,.66); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 40; }
+.fundo { position: fixed; inset: 0; background: rgba(20,29,38,.66); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 40; overflow-y: auto; }
 .cartao { background: var(--papel); border-radius: 10px; max-width: 560px; width: 100%; max-height: 90vh; overflow: auto; border-top: 6px solid var(--tape); }
 .topo-cartao { display: flex; justify-content: space-between; align-items: center; padding: 14px 18px; border-bottom: 1px solid var(--linha); position: sticky; top: 0; background: var(--papel); }
 .cartao h2 { font-family: var(--display); text-transform: uppercase; font-size: 20px; margin: 0; letter-spacing: .03em; }
