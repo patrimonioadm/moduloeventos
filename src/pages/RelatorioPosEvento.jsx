@@ -6,7 +6,7 @@ import { useEventosConfig } from "../lib/useEventosConfig";
 import { dataBR, dinheiro, SITUACOES_POS } from "../lib/dominio";
 import "../styles/relatorio.css";
 
-const POS_VAZIO = { publicoReal: "", pontosPositivos: [""], pontosNegativos: [""], opiniaoDiretoria: "", opiniaoSocios: "", npsNota: "" };
+const POS_VAZIO = { publicoReal: "", pontosPositivos: [""], pontosNegativos: [""], opiniaoDiretoria: "", opiniaoSocios: "", npsNota: "", observacoesDespesas: {} };
 
 export default function RelatorioPosEvento({ onFechar, notify }) {
   const { podeAdministrar } = useAuth();
@@ -15,6 +15,7 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
   const [dadosEvento, setDadosEvento] = useState(null);
   const [pos, setPos] = useState(POS_VAZIO);
   const [situacoesProgramacao, setSituacoesProgramacao] = useState([]);
+  const [obsProgramacao, setObsProgramacao] = useState([]);
   const [patrociniosPos, setPatrociniosPos] = useState([]); // [{ valorRecebido, obs }]
   const [salvando, setSalvando] = useState(false);
 
@@ -23,8 +24,9 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
       const { data } = await supabase.from("eventos").select("*").eq("id", eventoId).single();
       if (data) {
         setDadosEvento(data);
-        setPos({ ...POS_VAZIO, ...(data.pos_evento || {}) });
+        setPos({ ...POS_VAZIO, ...(data.pos_evento || {}), observacoesDespesas: data.pos_evento?.observacoesDespesas || {} });
         setSituacoesProgramacao((data.programacao || []).map((p) => p.situacao || "nao_avaliado"));
+        setObsProgramacao((data.programacao || []).map((p) => p.obsPos || ""));
         setPatrociniosPos((data.patrocinadores || []).map((p) => ({ valorRecebido: p.valorRecebido || "", obs: p.obsPos || "" })));
       }
     })();
@@ -34,7 +36,7 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
     setSalvando(true);
     try {
       const programacaoAtualizada = (dadosEvento.programacao || []).map((p, i) => ({
-        ...p, situacao: situacoesProgramacao[i],
+        ...p, situacao: situacoesProgramacao[i], obsPos: obsProgramacao[i] || "",
       }));
       const patrocinadoresAtualizados = (dadosEvento.patrocinadores || []).map((p, i) => ({
         ...p, valorRecebido: patrociniosPos[i]?.valorRecebido || "", obsPos: patrociniosPos[i]?.obs || "",
@@ -50,6 +52,10 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
     } finally {
       setSalvando(false);
     }
+  }
+
+  function atualizarObsDespesa(tarefaId, valor) {
+    setPos((p) => ({ ...p, observacoesDespesas: { ...p.observacoesDespesas, [tarefaId]: valor } }));
   }
 
   function atualizarLista(campo, index, valor) {
@@ -151,7 +157,7 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
             <section>
               <h2>Programação — realizado</h2>
               <table>
-                <thead><tr><th>Horário</th><th>Atividade</th><th>Situação</th></tr></thead>
+                <thead><tr><th>Horário</th><th>Atividade</th><th>Situação</th><th>Observação</th></tr></thead>
                 <tbody>
                   {dadosEvento.programacao.map((p, i) => (
                     <tr key={i}>
@@ -173,6 +179,20 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
                         )}
                         <span className={`sit sit-${situacoesProgramacao[i]}`}>{SITUACOES_POS[situacoesProgramacao[i]]}</span>
                       </td>
+                      <td>
+                        {podeAdministrar && (
+                          <input
+                            className="campoInline naoImprime"
+                            value={obsProgramacao[i] || ""}
+                            onChange={(e) => {
+                              const copia = [...obsProgramacao];
+                              copia[i] = e.target.value;
+                              setObsProgramacao(copia);
+                            }}
+                          />
+                        )}
+                        <span>{obsProgramacao[i] || "—"}</span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -183,7 +203,7 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
           <section>
             <h2>Despesas realizadas</h2>
             <table>
-              <thead><tr><th>Atividade</th><th>Empresa</th><th className="dir">Valor</th><th>Status</th></tr></thead>
+              <thead><tr><th>Atividade</th><th>Empresa</th><th className="dir">Valor</th><th>Status</th><th>Observação</th></tr></thead>
               <tbody>
                 {tarefas.map((t) => (
                   <tr key={t.id}>
@@ -191,10 +211,20 @@ export default function RelatorioPosEvento({ onFechar, notify }) {
                     <td>{t.empresa || "—"}</td>
                     <td className="dir">{t.valor ? dinheiro(t.valor) : "—"}</td>
                     <td>{t.status}</td>
+                    <td>
+                      {podeAdministrar && (
+                        <input
+                          className="campoInline naoImprime"
+                          value={pos.observacoesDespesas[t.id] || ""}
+                          onChange={(e) => atualizarObsDespesa(t.id, e.target.value)}
+                        />
+                      )}
+                      <span>{pos.observacoesDespesas[t.id] || "—"}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot><tr><td colSpan={2}>Total aprovado</td><td className="dir">{dinheiro(total)}</td><td /></tr></tfoot>
+              <tfoot><tr><td colSpan={2}>Total aprovado</td><td className="dir">{dinheiro(total)}</td><td colSpan={2} /></tr></tfoot>
             </table>
           </section>
 
