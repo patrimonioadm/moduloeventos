@@ -11,6 +11,8 @@
 .rel-titulo .subtitulo { font-weight: 700; text-transform: uppercase; letter-spacing: .1em; font-size: 10px; color: #3a4650; }
 .rel section { padding: 14px 26px; }
 .rel h2 { font-family: var(--display); font-size: 17px; margin: 14px 0 6px; padding-bottom: 3px; border-bottom: 1.5px solid #1a1a1a; }
+.rel h3 { font-family: var(--display); font-size: 13.5px; margin: 12px 0 5px; color: #3a4650; text-transform: uppercase; letter-spacing: .04em; }
+.rel p { margin: 3px 0; }
 .rel .tiraInfo { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px 14px; background: #f6f8f9; border: 1px solid #e2e8ec; border-radius: 6px; padding: 8px 10px; margin-bottom: 12px; }
 .rel .tiraInfo span { display: block; font-size: 8.5px; text-transform: uppercase; letter-spacing: .09em; color: #6b7883; font-weight: 700; }
 .rel .tiraInfo b { font-size: 13px; }
