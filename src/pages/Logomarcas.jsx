@@ -1,11 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { enviarImagem } from "../lib/storage";
 import { useEventosConfig } from "../lib/useEventosConfig";
 
 export default function Logomarcas({ onFechar, notify }) {
-  const { config, salvar, recarregar } = useEventosConfig();
+  const { config, loading, salvar, recarregar } = useEventosConfig();
   const [equipe, setEquipe] = useState(config.equipe_operacao);
   const [enviando, setEnviando] = useState(false);
+
+  // A busca da config é assíncrona — no primeiro render ela ainda pode
+  // estar com o valor inicial vazio. Sem isso, o estado local "equipe"
+  // ficava congelado no que veio no mount (às vezes []), e ao clicar em
+  // "Salvar equipe" sobrescrevia os dados reais do banco por uma lista
+  // vazia. Sincroniza sempre que a config termina de carregar.
+  useEffect(() => {
+    if (!loading) setEquipe(config.equipe_operacao);
+  }, [loading, config.equipe_operacao]);
 
   async function handleLogoClube(e) {
     const arquivo = e.target.files?.[0];
@@ -65,20 +74,26 @@ export default function Logomarcas({ onFechar, notify }) {
             <h3 className="secaoFicha">Equipe de operação do clube</h3>
             <p style={{ fontSize: 12.5, color: "var(--aco)" }}>
               Lista padrão de contatos operacionais (portaria, manutenção, cozinha etc.) usada como sugestão
-              na Ficha do evento.
+              na Ficha do evento e como opções de Responsável nas tarefas do Painel.
             </p>
-            {equipe.map((r, i) => (
-              <div key={i} className="linhaFicha">
-                <input placeholder="Nome" value={r.nome} onChange={(e) => atualizarLinha(i, "nome", e.target.value)} />
-                <input placeholder="Telefone" value={r.telefone} onChange={(e) => atualizarLinha(i, "telefone", e.target.value)} />
-                <input placeholder="Área" value={r.area} onChange={(e) => atualizarLinha(i, "area", e.target.value)} />
-                <button type="button" className="icone" onClick={() => removerLinha(i)}>✕</button>
-              </div>
-            ))}
-            <div className="fimLinha">
-              <button type="button" className="btn linha pequeno" onClick={addLinha}>+ Adicionar</button>
-              <button type="button" className="btn pequeno" onClick={salvarEquipe}>Salvar equipe</button>
-            </div>
+            {loading ? (
+              <p style={{ fontSize: 13, color: "var(--aco)" }}>Carregando…</p>
+            ) : (
+              <>
+                {equipe.map((r, i) => (
+                  <div key={i} className="linhaFicha">
+                    <input placeholder="Nome" value={r.nome} onChange={(e) => atualizarLinha(i, "nome", e.target.value)} />
+                    <input placeholder="Telefone" value={r.telefone} onChange={(e) => atualizarLinha(i, "telefone", e.target.value)} />
+                    <input placeholder="Área" value={r.area} onChange={(e) => atualizarLinha(i, "area", e.target.value)} />
+                    <button type="button" className="icone" onClick={() => removerLinha(i)}>✕</button>
+                  </div>
+                ))}
+                <div className="fimLinha">
+                  <button type="button" className="btn linha pequeno" onClick={addLinha}>+ Adicionar</button>
+                  <button type="button" className="btn pequeno" onClick={salvarEquipe} disabled={loading}>Salvar equipe</button>
+                </div>
+              </>
+            )}
           </section>
         </div>
       </div>

@@ -24,6 +24,12 @@ export default function FichaEvento({ onFechar, notify }) {
   const [patrocinadores, setPatrocinadores] = useState([]);
   const [programacao, setProgramacao] = useState([]);
   const [responsaveis, setResponsaveis] = useState([]);
+  const [gastro, setGastro] = useState([]);
+  const [restaurante, setRestaurante] = useState({
+    barHorario: "", cozinhaHorario: "", buffet: "nao_definido", buffetHorario: "", buffetPratos: "",
+    openBar: "nao_definido", openBebidas: "", promocoesTem: "nao_definido", promocoes: [],
+    tipoMenu: "", menuObs: "", menuArquivo: null,
+  });
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -47,6 +53,14 @@ export default function FichaEvento({ onFechar, notify }) {
         setPatrocinadores(data.patrocinadores || []);
         setProgramacao(data.programacao || []);
         setResponsaveis(data.responsaveis || []);
+        const A = data.alimentacao || {};
+        setGastro(A.gastro || []);
+        setRestaurante({
+          barHorario: "", cozinhaHorario: "", buffet: "nao_definido", buffetHorario: "", buffetPratos: "",
+          openBar: "nao_definido", openBebidas: "", promocoesTem: "nao_definido", promocoes: [],
+          tipoMenu: "", menuObs: "", menuArquivo: null,
+          ...(A.restaurante || {}),
+        });
       }
       setCarregado(true);
     })();
@@ -86,8 +100,31 @@ export default function FichaEvento({ onFechar, notify }) {
   function addResponsavel() {
     setResponsaveis((p) => [...p, { nome: "", telefone: "", area: "" }]);
   }
+  function addGastro() {
+    setGastro((g) => [...g, { parceiro: "", horario: "", destaques: "" }]);
+  }
+  function addPromocao() {
+    setRestaurante((r) => ({ ...r, promocoes: [...r.promocoes, { item: "", valor: "", horario: "" }] }));
+  }
+  function removerPromocao(index) {
+    setRestaurante((r) => ({ ...r, promocoes: r.promocoes.filter((_, i) => i !== index) }));
+  }
   function remover(lista, setLista, index) {
     setLista(lista.filter((_, i) => i !== index));
+  }
+
+  async function handleMenuArquivo(e) {
+    const arquivo = e.target.files?.[0];
+    if (!arquivo) return;
+    try {
+      const url = await enviarImagem(arquivo, `menu/${eventoId}`);
+      setRestaurante((r) => ({ ...r, menuArquivo: { nome: arquivo.name, tipo: arquivo.type, url } }));
+    } catch (err) {
+      setErro(err.message || "Falha ao enviar o arquivo do menu.");
+    }
+  }
+  function removerMenuArquivo() {
+    setRestaurante((r) => ({ ...r, menuArquivo: null }));
   }
 
   async function salvar(e) {
@@ -107,6 +144,7 @@ export default function FichaEvento({ onFechar, notify }) {
           patrocinadores,
           programacao,
           responsaveis,
+          alimentacao: { gastro, restaurante },
         })
         .eq("id", eventoId);
       if (error) throw error;
@@ -192,6 +230,234 @@ export default function FichaEvento({ onFechar, notify }) {
                 />
               </div>
             ))}
+          </section>
+
+          <section>
+            <h3 className="secaoFicha">Praça DKP Gastrô — parceiros</h3>
+            <p style={{ fontSize: 12, color: "var(--aco)", margin: "0 0 8px" }}>
+              Um parceiro por linha, com o horário de funcionamento e as promoções ou destaques do menu dele.
+            </p>
+            {gastro.map((g, i) => (
+              <div key={i} className="linhaFicha coluna">
+                <div className="grade">
+                  <input
+                    placeholder="Ex.: Flávio Sushi"
+                    value={g.parceiro || ""}
+                    disabled={somenteLeitura}
+                    onChange={(e) => {
+                      const copia = [...gastro];
+                      copia[i] = { ...copia[i], parceiro: e.target.value };
+                      setGastro(copia);
+                    }}
+                  />
+                  <input
+                    placeholder="Horário de funcionamento"
+                    value={g.horario || ""}
+                    disabled={somenteLeitura}
+                    onChange={(e) => {
+                      const copia = [...gastro];
+                      copia[i] = { ...copia[i], horario: e.target.value };
+                      setGastro(copia);
+                    }}
+                  />
+                </div>
+                <div className="campo">
+                  <label>Promoções e destaques do menu</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Um item por linha: prato, promoção, valor…"
+                    value={g.destaques || ""}
+                    disabled={somenteLeitura}
+                    onChange={(e) => {
+                      const copia = [...gastro];
+                      copia[i] = { ...copia[i], destaques: e.target.value };
+                      setGastro(copia);
+                    }}
+                  />
+                </div>
+                {!somenteLeitura && (
+                  <div className="fimLinha">
+                    <button type="button" className="btn linha pequeno" onClick={() => remover(gastro, setGastro, i)}>Remover parceiro</button>
+                  </div>
+                )}
+              </div>
+            ))}
+            {!somenteLeitura && <button type="button" className="btn linha pequeno" onClick={addGastro}>+ parceiro da praça</button>}
+
+            <h3 className="secaoFicha" style={{ marginTop: 18 }}>Restaurante</h3>
+            <div className="grade">
+              <div className="campo">
+                <label>Horário de funcionamento do bar</label>
+                <input
+                  placeholder="11h às 23h"
+                  value={restaurante.barHorario}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, barHorario: e.target.value }))}
+                />
+              </div>
+              <div className="campo">
+                <label>Horário de funcionamento da cozinha</label>
+                <input
+                  placeholder="11h30 às 22h"
+                  value={restaurante.cozinhaHorario}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, cozinhaHorario: e.target.value }))}
+                />
+              </div>
+              <div className="campo">
+                <label>Terá buffet?</label>
+                <select
+                  value={restaurante.buffet}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, buffet: e.target.value }))}
+                >
+                  <option value="nao_definido">A definir</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+              <div className="campo">
+                <label>Horário do buffet</label>
+                <input
+                  placeholder="12h às 16h"
+                  value={restaurante.buffetHorario}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, buffetHorario: e.target.value }))}
+                />
+              </div>
+              <div className="campo" style={{ gridColumn: "1 / -1" }}>
+                <label>Pratos destaques do buffet</label>
+                <textarea
+                  rows={3}
+                  placeholder="Um prato por linha"
+                  value={restaurante.buffetPratos}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, buffetPratos: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <h3 className="secaoFicha" style={{ marginTop: 18 }}>Bar</h3>
+            <div className="grade">
+              <div className="campo">
+                <label>Haverá open bar?</label>
+                <select
+                  value={restaurante.openBar}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, openBar: e.target.value }))}
+                >
+                  <option value="nao_definido">A definir</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+              <div className="campo" style={{ gridColumn: "2 / -1" }}>
+                <label>Bebidas do open</label>
+                <input
+                  placeholder="Chopp, whisky, água e refrigerante"
+                  value={restaurante.openBebidas}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, openBebidas: e.target.value }))}
+                />
+              </div>
+              <div className="campo">
+                <label>Haverá promoções?</label>
+                <select
+                  value={restaurante.promocoesTem}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, promocoesTem: e.target.value }))}
+                >
+                  <option value="nao_definido">A definir</option>
+                  <option value="sim">Sim</option>
+                  <option value="nao">Não</option>
+                </select>
+              </div>
+            </div>
+            {restaurante.promocoes.map((pr, i) => (
+              <div key={i} className="linhaFicha">
+                <input
+                  placeholder="Balde de long neck"
+                  value={pr.item}
+                  disabled={somenteLeitura}
+                  onChange={(e) => {
+                    const copia = [...restaurante.promocoes];
+                    copia[i] = { ...copia[i], item: e.target.value };
+                    setRestaurante((r) => ({ ...r, promocoes: copia }));
+                  }}
+                />
+                <input
+                  placeholder="R$ 60,00"
+                  value={pr.valor}
+                  disabled={somenteLeitura}
+                  onChange={(e) => {
+                    const copia = [...restaurante.promocoes];
+                    copia[i] = { ...copia[i], valor: e.target.value };
+                    setRestaurante((r) => ({ ...r, promocoes: copia }));
+                  }}
+                />
+                <input
+                  placeholder="14h às 18h"
+                  value={pr.horario}
+                  disabled={somenteLeitura}
+                  onChange={(e) => {
+                    const copia = [...restaurante.promocoes];
+                    copia[i] = { ...copia[i], horario: e.target.value };
+                    setRestaurante((r) => ({ ...r, promocoes: copia }));
+                  }}
+                />
+                {!somenteLeitura && <button type="button" className="icone" onClick={() => removerPromocao(i)}>✕</button>}
+              </div>
+            ))}
+            {!somenteLeitura && <button type="button" className="btn linha pequeno" onClick={addPromocao}>+ promoção</button>}
+
+            <h3 className="secaoFicha" style={{ marginTop: 18 }}>Menu</h3>
+            <div className="grade">
+              <div className="campo">
+                <label>Tipo de menu oferecido</label>
+                <input
+                  placeholder="À la carte, executivo, festivo, petiscos…"
+                  value={restaurante.tipoMenu}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, tipoMenu: e.target.value }))}
+                />
+              </div>
+              <div className="campo">
+                <label>Observações do menu</label>
+                <input
+                  placeholder="Ex.: menu reduzido no dia do evento"
+                  value={restaurante.menuObs}
+                  disabled={somenteLeitura}
+                  onChange={(e) => setRestaurante((r) => ({ ...r, menuObs: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="campo" style={{ marginTop: 10 }}>
+              <label>Arquivo do menu — imagem ou PDF</label>
+              {restaurante.menuArquivo ? (
+                <div className="logoPreview" style={{ alignItems: "center" }}>
+                  {String(restaurante.menuArquivo.tipo || "").startsWith("image") ? (
+                    <img src={restaurante.menuArquivo.url} alt={restaurante.menuArquivo.nome} />
+                  ) : (
+                    <span className="mono">📄 {restaurante.menuArquivo.nome}</span>
+                  )}
+                  {!somenteLeitura && (
+                    <button type="button" className="btn linha pequeno" style={{ borderColor: "var(--alerta)", color: "var(--alerta)" }} onClick={removerMenuArquivo}>
+                      Remover
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <span className="vazioCampo">nenhum arquivo anexado</span>
+              )}
+              {!somenteLeitura && (
+                <>
+                  <input type="file" accept="image/*,application/pdf" onChange={handleMenuArquivo} style={{ marginTop: 8 }} />
+                  <span style={{ fontSize: 11.5, color: "var(--aco)", display: "block", marginTop: 4 }}>
+                    salvo na hora · imagem sai impressa no relatório, PDF entra como anexo para download
+                  </span>
+                </>
+              )}
+            </div>
           </section>
 
           <section>
