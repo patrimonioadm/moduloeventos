@@ -3,10 +3,10 @@ import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useEventos } from "../context/EventosContext";
 import { useEventosConfig } from "../context/EventosConfigContext";
-import { STATUS, TIPOS, secaoPorTipo } from "../lib/dominio";
+import { STATUS, TIPOS, dinheiro, secaoPorTipo } from "../lib/dominio";
 
 export function TarefaModal({ tarefa, onClose, notify }) {
-  const { profile } = useAuth();
+  const { profile, podeAdministrar } = useAuth();
   const { eventoId, recarregarTarefas } = useEventos();
   const { config } = useEventosConfig();
   const editando = !!tarefa?.id;
@@ -23,6 +23,55 @@ export function TarefaModal({ tarefa, onClose, notify }) {
   const [nota, setNota] = useState("");
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [motivoExclusao, setMotivoExclusao] = useState("");
+  const [erroExclusao, setErroExclusao] = useState("");
+  const [excluindo, setExcluindo] = useState(false);
+
+  async function confirmarExclusao(e) {
+    e.preventDefault();
+    if (!motivoExclusao.trim()) {
+      setErroExclusao("Informe o motivo da exclusão — fica registrado no histórico da tarefa.");
+      return;
+    }
+    setExcluindo(true);
+    setErroExclusao("");
+    try {
+      // resumo da tarefa no momento da exclusão, pra quem olhar o histórico
+      // depois entender o que existia ali, mesmo com o item já removido da lista.
+      const resumo = [
+        tarefa.secao || "—",
+        tarefa.valor ? dinheiro(tarefa.valor) : "sem valor",
+        tarefa.empresa || "sem fornecedor",
+        `status ${STATUS[tarefa.status]?.rotulo || tarefa.status}`,
+        tarefa.responsavel ? `responsável ${tarefa.responsavel}` : null,
+      ].filter(Boolean).join(" · ");
+
+      // O banco também recusa esta alteração pra quem não é admin (RLS),
+      // então essa trava vale mesmo que alguém chame a API por fora
+      // desta tela — aqui só damos a mensagem clara pro caso de erro.
+      const { error } = await supabase.from("eventos_tarefas").update({ excluido: true }).eq("id", tarefa.id);
+      if (error) throw error;
+
+      const { error: histErro } = await supabase.from("eventos_tarefas_historico").insert({
+        tarefa_id: tarefa.id,
+        quem_id: profile.id,
+        quem_nome: profile.nome,
+        status_novo: tarefa.status,
+        nota: `Tarefa excluída — motivo: ${motivoExclusao.trim()} (era: ${resumo})`,
+      });
+      if (histErro) throw histErro;
+
+      notify("info", `"${tarefa.titulo}" foi excluída.`);
+      await recarregarTarefas();
+      onClose();
+    } catch (err) {
+      setErroExclusao(err.message || "Não foi possível excluir.");
+    } finally {
+      setExcluindo(false);
+    }
+  }
 
   async function salvar(e) {
     e.preventDefault();
@@ -81,69 +130,106 @@ export function TarefaModal({ tarefa, onClose, notify }) {
   }
 
   return (
-    <div className="fundo" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="cartao">
-        <div className="topo-cartao">
-          <h2>{editando ? "Editar tarefa" : "Incluir tarefa"}</h2>
-          <button className="icone" onClick={onClose} title="Fechar">✕</button>
+    <div className="fundo" onClick={(e) => e.target === e.currentTarget && !confirmandoExclusao && onClose()}>
+      {confirmandoExclusao ? (
+        <div className="cartao" style={{ maxWidth: 440 }}>
+          <div className="topo-cartao">
+            <h2>Excluir tarefa</h2>
+            <button className="icone" onClick={() => setConfirmandoExclusao(false)} title="Voltar">✕</button>
+          </div>
+          <form onSubmit={confirmarExclusao} className="conteudo" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ margin: 0 }}>
+              Tem certeza que deseja excluir <strong>{tarefa.titulo}</strong>? Ela some da lista, mas fica
+              registrada (com o motivo) no histórico da tarefa.
+            </p>
+            <div className="campo">
+              <label>Motivo</label>
+              <input value={motivoExclusao} onChange={(e) => setMotivoExclusao(e.target.value)} required autoFocus />
+            </div>
+            {erroExclusao && <p className="erroCampo">{erroExclusao}</p>}
+            <div className="rodapeCartao">
+              <button type="submit" className="btn alerta" disabled={excluindo}>{excluindo ? "Excluindo…" : "Excluir tarefa"}</button>
+              <button type="button" className="btn linha" onClick={() => setConfirmandoExclusao(false)}>Cancelar</button>
+            </div>
+          </form>
         </div>
-        <form onSubmit={salvar} className="conteudo" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="campo">
-            <label>Atividade</label>
-            <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required placeholder="Ex.: 2 tendas 10x10" />
+      ) : (
+        <div className="cartao">
+          <div className="topo-cartao">
+            <h2>{editando ? "Editar tarefa" : "Incluir tarefa"}</h2>
+            <button className="icone" onClick={onClose} title="Fechar">✕</button>
           </div>
-          <div className="grade">
+          <form onSubmit={salvar} className="conteudo" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <div className="campo">
-              <label>Tipo</label>
-              <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                {TIPOS.map((t) => <option key={t}>{t}</option>)}
-              </select>
+              <label>Atividade</label>
+              <input value={titulo} onChange={(e) => setTitulo(e.target.value)} required placeholder="Ex.: 2 tendas 10x10" />
+            </div>
+            <div className="grade">
+              <div className="campo">
+                <label>Tipo</label>
+                <select value={tipo} onChange={(e) => setTipo(e.target.value)}>
+                  {TIPOS.map((t) => <option key={t}>{t}</option>)}
+                </select>
+              </div>
+              <div className="campo">
+                <label>Status</label>
+                <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                  {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.rotulo}</option>)}
+                </select>
+              </div>
+              <div className="campo">
+                <label>Valor (R$)</label>
+                <input type="number" step="0.01" min="0" value={valor} onChange={(e) => setValor(e.target.value)} />
+              </div>
+              <div className="campo">
+                <label>Prazo</label>
+                <input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+              </div>
+              <div className="campo">
+                <label>Responsável</label>
+                <select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
+                  <option value="">— sem resp.</option>
+                  {config.equipe_operacao.map((p) => <option key={p.nome} value={p.nome}>{p.nome}</option>)}
+                </select>
+              </div>
+              <div className="campo">
+                <label>Empresa</label>
+                <input value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
+              </div>
+              <div className="campo">
+                <label>Contato</label>
+                <input value={contato} onChange={(e) => setContato(e.target.value)} placeholder="Telefone" />
+              </div>
             </div>
             <div className="campo">
-              <label>Status</label>
-              <select value={status} onChange={(e) => setStatus(e.target.value)}>
-                {Object.entries(STATUS).map(([k, v]) => <option key={k} value={k}>{v.rotulo}</option>)}
-              </select>
+              <label>Observação</label>
+              <textarea rows={2} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
             </div>
             <div className="campo">
-              <label>Valor (R$)</label>
-              <input type="number" step="0.01" min="0" value={valor} onChange={(e) => setValor(e.target.value)} />
+              <label>Nota para o histórico (opcional)</label>
+              <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="O que mudou / por quê" />
             </div>
-            <div className="campo">
-              <label>Prazo</label>
-              <input type="date" value={prazo} onChange={(e) => setPrazo(e.target.value)} />
+            {erro && <p className="erroCampo">{erro}</p>}
+            <div className="rodapeCartao">
+              <button type="submit" className="btn" disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</button>
+              <button type="button" className="btn linha" onClick={onClose}>Cancelar</button>
+              {editando && podeAdministrar && (
+                <>
+                  <span style={{ flex: 1 }} />
+                  <button
+                    type="button"
+                    className="btn linha"
+                    style={{ borderColor: "var(--alerta)", color: "var(--alerta)" }}
+                    onClick={() => setConfirmandoExclusao(true)}
+                  >
+                    Excluir tarefa
+                  </button>
+                </>
+              )}
             </div>
-            <div className="campo">
-              <label>Responsável</label>
-              <select value={responsavel} onChange={(e) => setResponsavel(e.target.value)}>
-                <option value="">— sem resp.</option>
-                {config.equipe_operacao.map((p) => <option key={p.nome} value={p.nome}>{p.nome}</option>)}
-              </select>
-            </div>
-            <div className="campo">
-              <label>Empresa</label>
-              <input value={empresa} onChange={(e) => setEmpresa(e.target.value)} />
-            </div>
-            <div className="campo">
-              <label>Contato</label>
-              <input value={contato} onChange={(e) => setContato(e.target.value)} placeholder="Telefone" />
-            </div>
-          </div>
-          <div className="campo">
-            <label>Observação</label>
-            <textarea rows={2} value={observacao} onChange={(e) => setObservacao(e.target.value)} />
-          </div>
-          <div className="campo">
-            <label>Nota para o histórico (opcional)</label>
-            <input value={nota} onChange={(e) => setNota(e.target.value)} placeholder="O que mudou / por quê" />
-          </div>
-          {erro && <p className="erroCampo">{erro}</p>}
-          <div className="rodapeCartao">
-            <button type="submit" className="btn" disabled={salvando}>{salvando ? "Salvando…" : "Salvar"}</button>
-            <button type="button" className="btn linha" onClick={onClose}>Cancelar</button>
-          </div>
-        </form>
-      </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }
