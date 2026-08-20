@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useEventos } from "../context/EventosContext";
-import { useEventosConfig } from "../lib/useEventosConfig";
+import { useEventosConfig } from "../context/EventosConfigContext";
 import { TabelaTarefas } from "../components/TabelaTarefas";
 import { TarefaModal } from "../components/TarefaModal";
 import { HistoricoModal } from "../components/HistoricoModal";

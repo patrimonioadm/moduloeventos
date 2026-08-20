@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useEventos } from "../context/EventosContext";
-import { useEventosConfig } from "../lib/useEventosConfig";
+import { useEventosConfig } from "../context/EventosConfigContext";
 import { STATUS, TIPOS, secaoPorTipo } from "../lib/dominio";
 
 export function TarefaModal({ tarefa, onClose, notify }) {
