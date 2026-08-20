@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useEventos } from "../context/EventosContext";
-import { useEventosConfig } from "../lib/useEventosConfig";
+import { useEventosConfig } from "../context/EventosConfigContext";
 import { dataBR, dinheiro } from "../lib/dominio";
 import "../styles/relatorio.css";
 

@@ -1,19 +1,34 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { supabase } from "../lib/supabaseClient";
 import { enviarImagem } from "../lib/storage";
-import { useEventosConfig } from "../lib/useEventosConfig";
+import { useEventosConfig } from "../context/EventosConfigContext";
+
+const chaveNome = (nome) => String(nome || "").trim().toLowerCase();
 
 export default function Logomarcas({ onFechar, notify }) {
   const { config, loading, salvar, recarregar } = useEventosConfig();
   const [equipe, setEquipe] = useState(config.equipe_operacao);
   const [enviando, setEnviando] = useState(false);
+  const [salvandoEquipe, setSalvandoEquipe] = useState(false);
+  // nomes removidos NESTA sessão de edição — para distinguir uma remoção
+  // intencional (clicou em "✕") de uma pessoa que só ainda não tinha
+  // chegado no estado local (ver comentário em salvarEquipe).
+  const [removidos, setRemovidos] = useState(() => new Set());
+  const primeiraCargaFeita = useRef(false);
 
-  // A busca da config é assíncrona — no primeiro render ela ainda pode
-  // estar com o valor inicial vazio. Sem isso, o estado local "equipe"
-  // ficava congelado no que veio no mount (às vezes []), e ao clicar em
-  // "Salvar equipe" sobrescrevia os dados reais do banco por uma lista
-  // vazia. Sincroniza sempre que a config termina de carregar.
+  // Sincroniza a lista local com o banco só na carga inicial (quando o
+  // loading termina pela primeira vez) — nunca de novo depois disso.
+  // Sem esse controle, qualquer outro salvamento nesta mesma tela (ex.:
+  // trocar a logo do clube) recarrega toda a config e, como o array de
+  // equipe_operacao vem sempre como uma referência nova do banco, o
+  // efeito disparava de novo no meio da edição e apagava silenciosamente
+  // qualquer pessoa que você tivesse acabado de digitar e ainda não
+  // salvo.
   useEffect(() => {
-    if (!loading) setEquipe(config.equipe_operacao);
+    if (!loading && !primeiraCargaFeita.current) {
+      setEquipe(config.equipe_operacao);
+      primeiraCargaFeita.current = true;
+    }
   }, [loading, config.equipe_operacao]);
 
   async function handleLogoClube(e) {
@@ -40,16 +55,51 @@ export default function Logomarcas({ onFechar, notify }) {
     setEquipe((e) => [...e, { nome: "", telefone: "", area: "" }]);
   }
   function removerLinha(i) {
+    const pessoa = equipe[i];
+    if (pessoa?.nome) setRemovidos((prev) => new Set(prev).add(chaveNome(pessoa.nome)));
     setEquipe(equipe.filter((_, idx) => idx !== i));
   }
 
   async function salvarEquipe() {
+    setSalvandoEquipe(true);
     try {
-      await salvar("equipe_operacao", equipe);
+      // Salvar aqui não pode ser um "substituir tudo" ingênuo: como
+      // "Salvar equipe" reaproveita o mesmo endpoint de "salvar" da
+      // logo (que sempre recarrega toda a config), e como é comum
+      // ter mais de uma aba/sessão do Logomarcas aberta ao mesmo
+      // tempo, o estado local desta tela pode ficar um passo atrás do
+      // banco. Por isso, buscamos o que está salvo AGORA no banco e
+      // mesclamos: quem já existe lá mas não está na lista local (e
+      // não foi removido de propósito nesta sessão) é adicionado de
+      // volta, em vez de simplesmente sobrescrito.
+      const { data, error: leituraErr } = await supabase
+        .from("eventos_config")
+        .select("valor")
+        .eq("chave", "equipe_operacao")
+        .single();
+      if (leituraErr) throw leituraErr;
+
+      const atualNoBanco = Array.isArray(data?.valor) ? data.valor : [];
+      const nomesLocais = new Set(equipe.map((p) => chaveNome(p.nome)).filter(Boolean));
+      const faltantes = atualNoBanco.filter(
+        (p) => p.nome && !nomesLocais.has(chaveNome(p.nome)) && !removidos.has(chaveNome(p.nome))
+      );
+      const mesclado = [...equipe, ...faltantes];
+
+      await salvar("equipe_operacao", mesclado);
+      setEquipe(mesclado);
+      setRemovidos(new Set());
       await recarregar();
-      notify("sucesso", "Equipe de operação atualizada.");
+      notify(
+        "sucesso",
+        faltantes.length > 0
+          ? `Equipe atualizada (${faltantes.length} pessoa(s) de outra sessão foram mantidas).`
+          : "Equipe de operação atualizada."
+      );
     } catch (err) {
       notify("ruim", err.message || "Não foi possível salvar.");
+    } finally {
+      setSalvandoEquipe(false);
     }
   }
 
@@ -90,7 +140,9 @@ export default function Logomarcas({ onFechar, notify }) {
                 ))}
                 <div className="fimLinha">
                   <button type="button" className="btn linha pequeno" onClick={addLinha}>+ Adicionar</button>
-                  <button type="button" className="btn pequeno" onClick={salvarEquipe} disabled={loading}>Salvar equipe</button>
+                  <button type="button" className="btn pequeno" onClick={salvarEquipe} disabled={loading || salvandoEquipe}>
+                    {salvandoEquipe ? "Salvando…" : "Salvar equipe"}
+                  </button>
                 </div>
               </>
             )}

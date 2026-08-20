@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabaseClient";
 import { useAuth } from "../context/AuthContext";
 import { useEventos } from "../context/EventosContext";
-import { useEventosConfig } from "../lib/useEventosConfig";
+import { useEventosConfig } from "../context/EventosConfigContext";
 import { dataBR, dinheiro, SITUACOES_POS } from "../lib/dominio";
 import "../styles/relatorio.css";
 
